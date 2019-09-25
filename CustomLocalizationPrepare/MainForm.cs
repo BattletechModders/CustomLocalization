@@ -26,6 +26,7 @@ namespace CustormLocalizationPrepare {
       modsList.DisplayMember = "Name";
       partsList.DisplayMember = "Name";
       saveFileDialog.FileName = CustomTranslation.Core.LocalizationFileName;
+      langsList.Items.Add(Localize.Strings.Culture.CULTURE_EN_US);
       langsList.Items.Add(Localize.Strings.Culture.CULTURE_DE_DE);
       langsList.Items.Add(Localize.Strings.Culture.CULTURE_ZH_CN);
       langsList.Items.Add(Localize.Strings.Culture.CULTURE_ES_ES);
@@ -37,6 +38,10 @@ namespace CustormLocalizationPrepare {
       partsList.Items.Add(new jtUIname());
       partsList.Items.Add(new jtName());
       partsList.Items.Add(new jtDetails());
+      partsList.Items.Add(new jtStockRole());
+      partsList.Items.Add(new jtEffectDataName());
+      partsList.Items.Add(new jtEffectDataDetails());
+      partsList.Items.Add(new jtYangsThoughts());
       partsList.Items.Add(new jtStatusEffectsName());
       partsList.Items.Add(new jtStatusEffectsDetails());
       partsList.Items.Add(new jtModeStatusEffectsName());
@@ -49,6 +54,7 @@ namespace CustormLocalizationPrepare {
       partsList.Items.Add(new jtCAEExplosionStatusEffectsDetails());
       partsList.Items.Add(new jtcontractName());
       partsList.Items.Add(new jtshortDescription());
+      partsList.Items.Add(new jtShortDesc());
       partsList.Items.Add(new jtlongDescription());
       partsList.Items.Add(new jtFlashpointShortDescription());
       partsList.Items.Add(new jtobjectiveList_title());
@@ -65,6 +71,7 @@ namespace CustormLocalizationPrepare {
       if (GameBaseSelector.ShowDialog() == DialogResult.OK) {
         modsList.Items.Clear();
         string modsDir = Path.Combine(GameBaseSelector.SelectedPath, "Mods");
+        if (Directory.Exists(modsDir) == false) { modsDir = GameBaseSelector.SelectedPath; };
         tbGamePath.Text = GameBaseSelector.SelectedPath;
         saveFileDialog.InitialDirectory = modsDir;
         foreach (string modPath in Directory.GetDirectories(modsDir)) {
@@ -114,8 +121,12 @@ namespace CustormLocalizationPrepare {
     }
 
     private void PrepareMods_Click(object sender, EventArgs e) {
-      if(saveFileDialog.ShowDialog() == DialogResult.OK) {
+      saveFileDialog.OverwritePrompt = false;
+      if (saveFileDialog.ShowDialog() == DialogResult.OK) {
+        string current_file = string.Empty;
         try {
+          bool fileExists = File.Exists(saveFileDialog.FileName);
+          string baseFile = saveFileDialog.FileName;
           LocalizationFile locFile = new LocalizationFile(saveFileDialog.FileName);
           List<ModRecord> mods = modsList.CheckedItems.OfType<ModRecord>().ToList<ModRecord>();
           Dictionary<string, string> jsonUpdatedContent = new Dictionary<string, string>();
@@ -125,10 +136,12 @@ namespace CustormLocalizationPrepare {
             List<string> jsonsPath = new List<string>();
             GetAllJsons(mod.Path, ref jsonsPath, 0);
             foreach(string jsonPath in jsonsPath) {
+              current_file = jsonPath;
               bool updated = false;
               //MessageBox.Show(jsonPath);
               string filename = Normilize(Path.GetFileNameWithoutExtension(jsonPath));
               object content = null;
+              if (Path.GetFileName(jsonPath).ToUpper() == "LOCALIZATION.JSON") { continue; }
               if (Path.GetExtension(jsonPath).ToUpper() == ".JSON") {
                 string jsonCont = File.ReadAllText(jsonPath);
                 content = JObject.Parse(jsonCont);
@@ -143,9 +156,10 @@ namespace CustormLocalizationPrepare {
                 foreach (var replacements in replaced) {
                   if (string.IsNullOrEmpty(replacements.Value) == false) {
                     CustomTranslation.TranslateRecord nTr = new CustomTranslation.TranslateRecord();
-                    nTr.FileName = jsonPath;
+                    nTr.FileName = jsonPath.Substring(GameBaseSelector.SelectedPath.Length);
                     nTr.Name = replacements.Key;
-                    nTr.Localization.Add(Localize.Strings.Culture.CULTURE_EN_US, replacements.Value);
+                    nTr.Original = replacements.Value;
+                    //nTr.Localization.Add(Localize.Strings.Culture.CULTURE_EN_US, replacements.Value);
                     foreach (Localize.Strings.Culture locLang in langsList.CheckedItems.OfType<Localize.Strings.Culture>().ToList<Localize.Strings.Culture>()) {
                       nTr.Localization.Add(locLang, replacements.Value);
                     }
@@ -153,13 +167,18 @@ namespace CustormLocalizationPrepare {
                     updated = true;
                   } else {
                     if (locFile.map.ContainsKey(replacements.Key)) {
-                      if (locFile.map[replacements.Key].Localization.ContainsKey(Localize.Strings.Culture.CULTURE_EN_US)) {
+                      string original = locFile.map[replacements.Key].Original;
+                      if (string.IsNullOrEmpty(original)) {
+                        original = locFile.map[replacements.Key].Localization[Localize.Strings.Culture.CULTURE_EN_US];
+                      }
+                      if (string.IsNullOrEmpty(original) == false) {
                         CustomTranslation.TranslateRecord nTr = new CustomTranslation.TranslateRecord();
-                        nTr.FileName = jsonPath;
+                        nTr.FileName = jsonPath.Substring(GameBaseSelector.SelectedPath.Length); ;
                         nTr.Name = replacements.Key;
+                        nTr.Original = original;
                         foreach (Localize.Strings.Culture locLang in langsList.CheckedItems.OfType<Localize.Strings.Culture>().ToList<Localize.Strings.Culture>()) {
                           if (locFile.map[replacements.Key].Localization.ContainsKey(locLang) == false) {
-                            nTr.Localization.Add(locLang, locFile.map[replacements.Key].Localization[Localize.Strings.Culture.CULTURE_EN_US]);
+                            nTr.Localization.Add(locLang, original);
                           }
                         }
                         locFile.Merge(nTr);
@@ -178,17 +197,34 @@ namespace CustormLocalizationPrepare {
                 }
               };
             }
+            current_file = string.Empty;
           }
-          locFile.Save();
+          if (fileExists == false) {
+            locFile.Save();
+          } else {
+            saveFileDialog.InitialDirectory = Path.GetDirectoryName(baseFile);
+            if (saveFileDialog.ShowDialog() == DialogResult.OK) {
+              if(saveFileDialog.FileName == baseFile) {
+                //MessageBox.Show("Same file");
+                locFile.Save();
+              } else {
+                //MessageBox.Show("Different file");
+                locFile.filename = saveFileDialog.FileName;
+                locFile.removeOtherTranslations(langsList.CheckedItems.OfType<Localize.Strings.Culture>().ToList<Localize.Strings.Culture>());
+                locFile.Save();
+              }
+            }
+          }
           foreach (var uJsons in jsonUpdatedContent) {
             File.WriteAllText(uJsons.Key, uJsons.Value);
           }
           foreach (var uConv in convUpdatedContent) {
             uConv.Value.Save();
           }
+
           MessageBox.Show("Done");
         }catch(Exception ex) {
-          MessageBox.Show(ex.ToString());
+          MessageBox.Show("in file:" + current_file + "\n" + ex.ToString());
         }
       }
     }
@@ -198,6 +234,18 @@ namespace CustormLocalizationPrepare {
       Application.Exit();
       Environment.Exit(0);
       Application.ExitThread();
+    }
+
+    private void chAllMods_Click(object sender, EventArgs e) {
+      for (int t = 0; t < modsList.Items.Count; ++t) {
+        modsList.SetItemCheckState(t, CheckState.Checked);
+      }
+    }
+
+    private void chAllParts_Click(object sender, EventArgs e) {
+      for (int t = 0; t < partsList.Items.Count; ++t) {
+        partsList.SetItemCheckState(t, CheckState.Checked);
+      }
     }
   }
 }

@@ -1,4 +1,5 @@
 ﻿using isogame;
+using Localize;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ProtoBuf.Meta;
@@ -71,8 +72,29 @@ namespace CustomTranslation {
         map.Add(inc.Name, inc);
         changed = true;
       } else {
+        if (string.IsNullOrEmpty(map[inc.Name].Original)) {
+          map[inc.Name].Original = inc.Original;
+        }
+        if (string.IsNullOrEmpty(map[inc.Name].Commentary)) {
+          map[inc.Name].Commentary = inc.Commentary;
+        }
         foreach (var tr in inc.Localization) {
           if (map[inc.Name].Localization.ContainsKey(tr.Key) == false) { map[inc.Name].Localization.Add(tr.Key, tr.Value); changed = true; }
+        }
+      }
+    }
+    public void removeOtherTranslations(List<Strings.Culture> neededLocs) {
+      HashSet<Strings.Culture> stay_cultures = new HashSet<Strings.Culture>();
+      foreach(Strings.Culture culture in neededLocs) {
+        stay_cultures.Add(culture);
+      }
+      HashSet<Strings.Culture> del_cultures = new HashSet<Strings.Culture>();
+      foreach (Strings.Culture culture in Enum.GetValues(typeof(Strings.Culture))) {
+        if (stay_cultures.Contains(culture) == false) { del_cultures.Add(culture); };
+      }
+      foreach (CustomTranslation.TranslateRecord rec in this.content) {
+        foreach(Strings.Culture culture in del_cultures) {
+          if (rec.Localization.ContainsKey(culture)) { rec.Localization.Remove(culture); };
         }
       }
     }
@@ -188,6 +210,94 @@ namespace CustomTranslation {
       if ((check == false) || (Core.stringsTable.ContainsKey(key) == true)) {
         json["Description"]["Details"] = CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
         replaced.Add(key, original);
+      }
+      inc = json;
+      return true;
+    }
+  }
+  public class jtStockRole : jtProcGeneric {
+    public override string Name { get { return "StockRole"; } }
+    public override bool proc(string modName, string filename, ref object inc, Dictionary<string, string> replaced, bool check) {
+      JObject json = inc as JObject;
+      if (json == null) { return false; }
+      if (json["StockRole"] == null) { return false; };
+      string value = (string)json["StockRole"];
+      if (string.IsNullOrEmpty(value)) { return false; };
+      string key = modName + "." + filename + ".StockRole";
+      MatchCollection matches = CustomTranslation.Core.locRegEx.Matches(value);
+      if (matches.Count != 0) { foreach (Match match in matches) { replaced.Add(match.Groups[1].Value, String.Empty); }; return false; };
+      string original = (string)json["StockRole"];
+      if ((check == false) || (Core.stringsTable.ContainsKey(key) == true)) {
+        json["StockRole"] = CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
+        replaced.Add(key, original);
+      }
+      inc = json;
+      return true;
+    }
+  }
+  public class jtYangsThoughts : jtProcGeneric {
+    public override string Name { get { return "YangsThoughts"; } }
+    public override bool proc(string modName, string filename, ref object inc, Dictionary<string, string> replaced, bool check) {
+      JObject json = inc as JObject;
+      if (json == null) { return false; }
+      if (json["YangsThoughts"] == null) { return false; };
+      string value = (string)json["YangsThoughts"];
+      if (string.IsNullOrEmpty(value)) { return false; };
+      string key = modName + "." + filename + ".YangsThoughts";
+      MatchCollection matches = CustomTranslation.Core.locRegEx.Matches(value);
+      if (matches.Count != 0) { foreach (Match match in matches) { replaced.Add(match.Groups[1].Value, String.Empty); }; return false; };
+      string original = (string)json["YangsThoughts"];
+      if ((check == false) || (Core.stringsTable.ContainsKey(key) == true)) {
+        json["YangsThoughts"] = CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
+        replaced.Add(key, original);
+      }
+      inc = json;
+      return true;
+    }
+  }
+  public class jtEffectDataName : jtProcGeneric {
+    public override string Name { get { return "EffectData.Description.Name"; } }
+    public override bool proc(string modName, string filename, ref object inc, Dictionary<string, string> replaced, bool check) {
+      JObject json = inc as JObject;
+      if (json == null) { return false; }
+      if (json["EffectData"] == null) { return false; };
+      if (json["EffectData"].Count() == 0) { return false; };
+      int count = json["EffectData"].Count();
+      for (int t = 0; t < count; ++t) {
+        if (json["EffectData"][t]["Description"] == null) { continue; }
+        string value = (string)json["EffectData"][t]["Description"]["Name"];
+        if (string.IsNullOrEmpty(value)) { continue; };
+        string key = modName + "." + filename + "." + json["EffectData"][t]["Description"]["Id"] + ".effect" + t + ".Name";
+        MatchCollection matches = CustomTranslation.Core.locRegEx.Matches(value);
+        if (matches.Count != 0) { foreach (Match match in matches) { replaced.Add(match.Groups[1].Value, String.Empty); }; continue; };
+        if ((check == false) || (Core.stringsTable.ContainsKey(key) == true)) {
+          json["EffectData"][t]["Description"]["Name"] = CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
+          replaced.Add(key, value);
+        }
+      }
+      inc = json;
+      return true;
+    }
+  }
+  public class jtEffectDataDetails : jtProcGeneric {
+    public override string Name { get { return "EffectData.Description.Details"; } }
+    public override bool proc(string modName, string filename, ref object inc, Dictionary<string, string> replaced, bool check) {
+      JObject json = inc as JObject;
+      if (json == null) { return false; }
+      if (json["EffectData"] == null) { return false; };
+      if (json["EffectData"].Count() == 0) { return false; };
+      int count = json["EffectData"].Count();
+      for (int t = 0; t < count; ++t) {
+        if (json["EffectData"][t]["Description"] == null) { continue; }
+        string value = (string)json["EffectData"][t]["Description"]["Details"];
+        if (string.IsNullOrEmpty(value)) { continue; };
+        string key = modName + "." + filename + "." + json["EffectData"][t]["Description"]["Id"] + ".effect" + t + ".Details";
+        MatchCollection matches = CustomTranslation.Core.locRegEx.Matches(value);
+        if (matches.Count != 0) { foreach (Match match in matches) { replaced.Add(match.Groups[1].Value, String.Empty); }; continue; };
+        if ((check == false) || (Core.stringsTable.ContainsKey(key) == true)) {
+          json["EffectData"][t]["Description"]["Details"] = CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
+          replaced.Add(key, value);
+        }
       }
       inc = json;
       return true;
@@ -486,6 +596,24 @@ namespace CustomTranslation {
       if (CustomTranslation.Core.locRegEx.Matches(value).Count != 0) { replaced.Add(key, String.Empty); return false; };
       if ((check == false) || (Core.stringsTable.ContainsKey(key) == true)) {
         json["shortDescription"] = CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
+        replaced.Add(key, value);
+      }
+      inc = json;
+      return true;
+    }
+  }
+  public class jtShortDesc : jtProcGeneric {
+    public override string Name { get { return "ShortDesc"; } }
+    public override bool proc(string modName, string filename, ref object inc, Dictionary<string, string> replaced, bool check) {
+      JObject json = inc as JObject;
+      if (json == null) { return false; }
+      if (json["ShortDesc"] == null) { return false; };
+      string value = (string)json["ShortDesc"];
+      if (string.IsNullOrEmpty(value)) { return false; };
+      string key = modName + "." + filename + ".ShortDesc";
+      if (CustomTranslation.Core.locRegEx.Matches(value).Count != 0) { replaced.Add(key, String.Empty); return false; };
+      if ((check == false) || (Core.stringsTable.ContainsKey(key) == true)) {
+        json["ShortDesc"] = CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
         replaced.Add(key, value);
       }
       inc = json;

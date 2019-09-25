@@ -16,40 +16,45 @@ namespace CustomLocalizationSetup {
     private List<object> partsList;
     public MainForm() {
       InitializeComponent();
-      Core.Settings = new CTSettings();
-      Core.Settings.debugLog = true;
-      Log.BaseDirectory = Path.GetDirectoryName(Application.ExecutablePath);
-      Log.InitLog();
-      string baseDirectory = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "..");
-      Core.GatherLocalizations(baseDirectory);
-      partsList = new List<object>();
-      partsList.Add(new jtUIname());
-      partsList.Add(new jtName());
-      partsList.Add(new jtDetails());
-      partsList.Add(new jtStatusEffectsName());
-      partsList.Add(new jtStatusEffectsDetails());
-      partsList.Add(new jtModeStatusEffectsName());
-      partsList.Add(new jtModeStatusEffectsDetails());
-      partsList.Add(new jtCAEStatusEffectsName());
-      partsList.Add(new jtCAEStatusEffectsDetails());
-      partsList.Add(new jtCAEofflineStatusEffectsName());
-      partsList.Add(new jtCAEofflineStatusEffectsDetails());
-      partsList.Add(new jtCAEExplosionStatusEffectsName());
-      partsList.Add(new jtCAEExplosionStatusEffectsDetails());
-      partsList.Add(new jtcontractName());
-      partsList.Add(new jtshortDescription());
-      partsList.Add(new jtlongDescription());
-      partsList.Add(new jtFlashpointShortDescription());
-      partsList.Add(new jtobjectiveList_title());
-      partsList.Add(new jtobjectiveList_description());
-      partsList.Add(new jtcontents_words());
-      partsList.Add(new jtdialogueListdialogueContentWords());
-      partsList.Add(new jtOptionsDescriptionName());
-      partsList.Add(new jtOptionsDescriptionDetails());
-      partsList.Add(new jtOptionsResultSetsDescriptionName());
-      partsList.Add(new jtOptionsResultSetsDescriptionDetails());
-      partsList.Add(new jtConversations());
-
+      try {
+        Core.Settings = new CTSettings();
+        Core.Settings.debugLog = true;
+        Log.BaseDirectory = Path.GetDirectoryName(Application.ExecutablePath);
+        Log.InitLog();
+        string baseDirectory = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "..");
+        Core.GatherLocalizations(baseDirectory);
+        partsList = new List<object>();
+        partsList.Add(new jtUIname());
+        partsList.Add(new jtName());
+        partsList.Add(new jtDetails());
+        partsList.Add(new jtEffectDataName());
+        partsList.Add(new jtEffectDataDetails());
+        partsList.Add(new jtStatusEffectsName());
+        partsList.Add(new jtStatusEffectsDetails());
+        partsList.Add(new jtModeStatusEffectsName());
+        partsList.Add(new jtModeStatusEffectsDetails());
+        partsList.Add(new jtCAEStatusEffectsName());
+        partsList.Add(new jtCAEStatusEffectsDetails());
+        partsList.Add(new jtCAEofflineStatusEffectsName());
+        partsList.Add(new jtCAEofflineStatusEffectsDetails());
+        partsList.Add(new jtCAEExplosionStatusEffectsName());
+        partsList.Add(new jtCAEExplosionStatusEffectsDetails());
+        partsList.Add(new jtcontractName());
+        partsList.Add(new jtshortDescription());
+        partsList.Add(new jtlongDescription());
+        partsList.Add(new jtFlashpointShortDescription());
+        partsList.Add(new jtobjectiveList_title());
+        partsList.Add(new jtobjectiveList_description());
+        partsList.Add(new jtcontents_words());
+        partsList.Add(new jtdialogueListdialogueContentWords());
+        partsList.Add(new jtOptionsDescriptionName());
+        partsList.Add(new jtOptionsDescriptionDetails());
+        partsList.Add(new jtOptionsResultSetsDescriptionName());
+        partsList.Add(new jtOptionsResultSetsDescriptionDetails());
+        partsList.Add(new jtConversations());
+      } catch (Exception e) {
+        Console.WriteLine(e.ToString());
+      }
       backgroundWorker.RunWorkerAsync();
     }
 
@@ -76,6 +81,7 @@ namespace CustomLocalizationSetup {
             //MessageBox.Show(jsonPath);
             string filename = ModRecord.Normilize(Path.GetFileNameWithoutExtension(jsonPath));
             object content = null;
+            if (Path.GetFileName(jsonPath).ToUpper() == "LOCALIZATION.JSON") { continue; }
             if (Path.GetExtension(jsonPath).ToUpper() == ".JSON") {
               string jsonCont = File.ReadAllText(jsonPath);
               content = JObject.Parse(jsonCont);

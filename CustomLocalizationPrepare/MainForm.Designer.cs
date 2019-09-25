@@ -35,6 +35,8 @@
       this.GameBaseSelector = new System.Windows.Forms.FolderBrowserDialog();
       this.backgroundParse = new System.ComponentModel.BackgroundWorker();
       this.saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+      this.chAllParts = new System.Windows.Forms.Button();
+      this.chAllMods = new System.Windows.Forms.Button();
       this.splitContainer1.Panel1.SuspendLayout();
       this.splitContainer1.Panel2.SuspendLayout();
       this.splitContainer1.SuspendLayout();
@@ -83,6 +85,7 @@
       // 
       // splitContainer1.Panel1
       // 
+      this.splitContainer1.Panel1.Controls.Add(this.chAllMods);
       this.splitContainer1.Panel1.Controls.Add(this.modsList);
       // 
       // splitContainer1.Panel2
@@ -100,7 +103,7 @@
       this.modsList.FormattingEnabled = true;
       this.modsList.Location = new System.Drawing.Point(3, 3);
       this.modsList.Name = "modsList";
-      this.modsList.Size = new System.Drawing.Size(195, 394);
+      this.modsList.Size = new System.Drawing.Size(195, 364);
       this.modsList.TabIndex = 0;
       // 
       // splitContainer2
@@ -111,6 +114,7 @@
       // 
       // splitContainer2.Panel1
       // 
+      this.splitContainer2.Panel1.Controls.Add(this.chAllParts);
       this.splitContainer2.Panel1.Controls.Add(this.partsList);
       // 
       // splitContainer2.Panel2
@@ -129,7 +133,7 @@
       this.partsList.FormattingEnabled = true;
       this.partsList.Location = new System.Drawing.Point(3, 3);
       this.partsList.Name = "partsList";
-      this.partsList.Size = new System.Drawing.Size(194, 394);
+      this.partsList.Size = new System.Drawing.Size(194, 364);
       this.partsList.TabIndex = 0;
       // 
       // langsList
@@ -173,6 +177,28 @@
       this.saveFileDialog.Filter = "Json file|*.json";
       this.saveFileDialog.Title = "Save localization";
       // 
+      // chAllParts
+      // 
+      this.chAllParts.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+      this.chAllParts.Location = new System.Drawing.Point(3, 373);
+      this.chAllParts.Name = "chAllParts";
+      this.chAllParts.Size = new System.Drawing.Size(194, 23);
+      this.chAllParts.TabIndex = 1;
+      this.chAllParts.Text = "check all";
+      this.chAllParts.UseVisualStyleBackColor = true;
+      this.chAllParts.Click += new System.EventHandler(this.chAllParts_Click);
+      // 
+      // chAllMods
+      // 
+      this.chAllMods.Location = new System.Drawing.Point(3, 373);
+      this.chAllMods.Name = "chAllMods";
+      this.chAllMods.Size = new System.Drawing.Size(195, 23);
+      this.chAllMods.TabIndex = 1;
+      this.chAllMods.Text = "check all";
+      this.chAllMods.UseVisualStyleBackColor = true;
+      this.chAllMods.Click += new System.EventHandler(this.chAllMods_Click);
+      // 
       // MainForm
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -211,6 +237,8 @@
     private System.Windows.Forms.FolderBrowserDialog GameBaseSelector;
     private System.ComponentModel.BackgroundWorker backgroundParse;
     private System.Windows.Forms.SaveFileDialog saveFileDialog;
+    private System.Windows.Forms.Button chAllMods;
+    private System.Windows.Forms.Button chAllParts;
   }
 }
 

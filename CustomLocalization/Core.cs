@@ -122,9 +122,11 @@ namespace CustomTranslation {
   }
   public class TranslateRecord {
     public string FileName { get; set; }
+    public string Original { get; set; }
+    public string Commentary { get; set; }
     public string Name { get; set; }
     public Dictionary<Localize.Strings.Culture, string> Localization { get; set; }
-    public TranslateRecord() { Localization = new Dictionary<Strings.Culture, string>(); }
+    public TranslateRecord() { Localization = new Dictionary<Strings.Culture, string>(); Commentary = String.Empty; }
   }
   public class CTSettings {
     public bool debugLog { get; set; }
