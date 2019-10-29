@@ -12,6 +12,8 @@ using System.Text;
 using System.Threading;
 using UnityEngine;
 using System.Text.RegularExpressions;
+using BattleTech.UI;
+using BattleTech.UI.TMProWrapper;
 
 namespace CustomTranslation {
   public static class Log {
@@ -76,17 +78,32 @@ namespace CustomTranslation {
       //}
     }
   }
+  [HarmonyPatch(typeof(SG_Stores_MultiPurchasePopup))]
+  [HarmonyPatch("Refresh")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class SG_Stores_MultiPurchasePopup_Refresh {
+    public static void Postfix(SG_Stores_MultiPurchasePopup __instance, LocalizableText ___TitleText, string ___itemName) {
+      Log.LogWrite("SG_Stores_MultiPurchasePopup.Refresh dirty hack: "+ ___itemName+"\n");
+      ___TitleText.SetText(new Text("SELL: "+ ___itemName).ToString());
+    }
+  }
+
   [HarmonyPatch(typeof(Localize.Text))]
   [HarmonyPatch("Append")]
   [HarmonyPatch(MethodType.Normal)]
   public static class Text_Append {
     public static void Localize(ref string text) {
       if (string.IsNullOrEmpty(text)) { return; };
+      if (Core.localizationCache.ContainsKey(text)) {
+        text = Core.localizationCache[text];
+        return;
+      }
       MatchCollection matches = Core.locRegEx.Matches(text);
-      Log.LogWrite(text + "\n");
+      //Log.LogWrite(text + "\n");
+      string original = text;
       if (matches.Count != 0) {
         for (int t = 0; t < matches.Count; ++t) {
-          Log.LogWrite(" '" + matches[t].Groups[1].Value + "':" + matches[t].Index + ":" + matches[t].Length + "\n");
+          //Log.LogWrite(" '" + matches[t].Groups[1].Value + "':" + matches[t].Index + ":" + matches[t].Length + "\n");
         }
         StringBuilder newText = new StringBuilder();
         int pos = 0;
@@ -98,26 +115,36 @@ namespace CustomTranslation {
         if (pos < text.Length) { newText.Append(text.Substring(pos)); };
         text = newText.ToString();
       }
+      Core.localizationCache.Add(original, text);
     }
     public static bool Prefix(Text __instance, ref string text, ref object[] args) {
       try {
         if (string.IsNullOrEmpty(text)) { return true; };
+        Log.LogWrite("Localize.Text:" + text);
         Text_Append.Localize(ref text);
+        Log.LogWrite("->"+text);
         if (args != null) {
           //Log.LogWrite(" params:" + args.Length + "\n");
           for (int t = 0; t < args.Length; ++t) {
+            if (args[t] == null) { continue; };
             if (args[t].GetType() == typeof(System.String)) {
               string arg = (string)args[t];
+              Log.LogWrite(" "+arg);
               Text_Append.Localize(ref arg);
               args[t] = arg;
+              Log.LogWrite("->" + arg);
             }
             //Log.LogWrite("  string param:" + args[t] + ":"+args[t].GetType()+"\n");
           }
         }
+        Log.LogWrite("\n");
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + " " + text + "\n");
+        Log.LogWrite(e.ToString() + " " + text + "\n",true);
       }
       return true;
+    }
+    public static void Postfix(Text __instance) {
+      Log.LogWrite(" result:" + __instance+"\n");
     }
   }
   public class TranslateRecord {
@@ -140,6 +167,7 @@ namespace CustomTranslation {
     public static readonly string LocalizationRefPrefix = "__/";
     public static readonly string LocalizationRefSufix = "/__";
     public static Dictionary<string, Dictionary<Localize.Strings.Culture, string>> stringsTable = new Dictionary<string, Dictionary<Localize.Strings.Culture, string>>();
+    public static Dictionary<string, string> localizationCache = new Dictionary<string, string>();
     public static void GatherLocalizations(string directory) {
       string locfile = Path.Combine(directory, Core.LocalizationFileName);
       Log.LogWrite("File:" + locfile + "\n");

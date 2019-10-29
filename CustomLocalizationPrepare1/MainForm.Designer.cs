@@ -27,21 +27,19 @@
       this.label1 = new System.Windows.Forms.Label();
       this.openMods = new System.Windows.Forms.Button();
       this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-      this.chAllMods = new System.Windows.Forms.Button();
       this.modsList = new System.Windows.Forms.CheckedListBox();
       this.splitContainer2 = new System.Windows.Forms.SplitContainer();
-      this.chAllParts = new System.Windows.Forms.Button();
       this.partsList = new System.Windows.Forms.CheckedListBox();
       this.langsList = new System.Windows.Forms.CheckedListBox();
       this.PrepareMods = new System.Windows.Forms.Button();
       this.GameBaseSelector = new System.Windows.Forms.FolderBrowserDialog();
       this.backgroundParse = new System.ComponentModel.BackgroundWorker();
       this.saveFileDialog = new System.Windows.Forms.SaveFileDialog();
-      ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
+      this.chAllParts = new System.Windows.Forms.Button();
+      this.chAllMods = new System.Windows.Forms.Button();
       this.splitContainer1.Panel1.SuspendLayout();
       this.splitContainer1.Panel2.SuspendLayout();
       this.splitContainer1.SuspendLayout();
-      ((System.ComponentModel.ISupportInitialize)(this.splitContainer2)).BeginInit();
       this.splitContainer2.Panel1.SuspendLayout();
       this.splitContainer2.Panel2.SuspendLayout();
       this.splitContainer2.SuspendLayout();
@@ -97,16 +95,6 @@
       this.splitContainer1.SplitterDistance = 201;
       this.splitContainer1.TabIndex = 9;
       // 
-      // chAllMods
-      // 
-      this.chAllMods.Location = new System.Drawing.Point(3, 373);
-      this.chAllMods.Name = "chAllMods";
-      this.chAllMods.Size = new System.Drawing.Size(195, 23);
-      this.chAllMods.TabIndex = 1;
-      this.chAllMods.Text = "check all";
-      this.chAllMods.UseVisualStyleBackColor = true;
-      this.chAllMods.Click += new System.EventHandler(this.chAllMods_Click);
-      // 
       // modsList
       // 
       this.modsList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -135,18 +123,6 @@
       this.splitContainer2.Size = new System.Drawing.Size(398, 402);
       this.splitContainer2.SplitterDistance = 200;
       this.splitContainer2.TabIndex = 0;
-      // 
-      // chAllParts
-      // 
-      this.chAllParts.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-      this.chAllParts.Location = new System.Drawing.Point(3, 373);
-      this.chAllParts.Name = "chAllParts";
-      this.chAllParts.Size = new System.Drawing.Size(194, 23);
-      this.chAllParts.TabIndex = 1;
-      this.chAllParts.Text = "check all";
-      this.chAllParts.UseVisualStyleBackColor = true;
-      this.chAllParts.Click += new System.EventHandler(this.chAllParts_Click);
       // 
       // partsList
       // 
@@ -201,6 +177,28 @@
       this.saveFileDialog.Filter = "Json file|*.json";
       this.saveFileDialog.Title = "Save localization";
       // 
+      // chAllParts
+      // 
+      this.chAllParts.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+      this.chAllParts.Location = new System.Drawing.Point(3, 373);
+      this.chAllParts.Name = "chAllParts";
+      this.chAllParts.Size = new System.Drawing.Size(194, 23);
+      this.chAllParts.TabIndex = 1;
+      this.chAllParts.Text = "check all";
+      this.chAllParts.UseVisualStyleBackColor = true;
+      this.chAllParts.Click += new System.EventHandler(this.chAllParts_Click);
+      // 
+      // chAllMods
+      // 
+      this.chAllMods.Location = new System.Drawing.Point(3, 373);
+      this.chAllMods.Name = "chAllMods";
+      this.chAllMods.Size = new System.Drawing.Size(195, 23);
+      this.chAllMods.TabIndex = 1;
+      this.chAllMods.Text = "check all";
+      this.chAllMods.UseVisualStyleBackColor = true;
+      this.chAllMods.Click += new System.EventHandler(this.chAllMods_Click);
+      // 
       // MainForm
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -216,11 +214,9 @@
       this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
       this.splitContainer1.Panel1.ResumeLayout(false);
       this.splitContainer1.Panel2.ResumeLayout(false);
-      ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
       this.splitContainer1.ResumeLayout(false);
       this.splitContainer2.Panel1.ResumeLayout(false);
       this.splitContainer2.Panel2.ResumeLayout(false);
-      ((System.ComponentModel.ISupportInitialize)(this.splitContainer2)).EndInit();
       this.splitContainer2.ResumeLayout(false);
       this.ResumeLayout(false);
       this.PerformLayout();

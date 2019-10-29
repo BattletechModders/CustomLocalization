@@ -21,7 +21,7 @@ namespace CustormLocalizationPrepare {
       } else {
         Console.WriteLine("Not exists: ");
         string managedPath = AppDomain.CurrentDomain.BaseDirectory;
-        managedPath = Path.Combine(managedPath, "..");
+        managedPath = Path.Combine(managedPath,"..");
         managedPath = Path.Combine(managedPath, "..");
         managedPath = Path.Combine(managedPath, "BattleTech_Data");
         managedPath = Path.Combine(managedPath, "Managed");
@@ -33,8 +33,8 @@ namespace CustormLocalizationPrepare {
         string logSrcPath = Path.Combine(managedPath, "CustomTranslation.log");
         try {
           Console.WriteLine("Copy:");
-          Console.WriteLine("From:" + exeSrcPath);
-          Console.WriteLine("To:" + exeDstPath);
+          Console.WriteLine("From:"+exeSrcPath);
+          Console.WriteLine("To:"+exeDstPath);
           File.Copy(exeSrcPath, exeDstPath, true);
           Console.WriteLine("success");
           Console.WriteLine("Copy:");
@@ -45,10 +45,10 @@ namespace CustormLocalizationPrepare {
           ProcessStartInfo psi = new ProcessStartInfo();
           psi.WorkingDirectory = managedPath;
           psi.FileName = exeDstPath;
-          Console.WriteLine("Starting:" + psi.FileName);
+          Console.WriteLine("Starting:"+psi.FileName);
           Process p = Process.Start(psi);
-          while (p.WaitForExit(100) == false) {
-            try { File.Copy(logSrcPath, logDstPath, true); } catch (Exception) { }
+          while(p.WaitForExit(100) == false) {
+            try { File.Copy(logSrcPath, logDstPath, true); } catch (Exception) {}
           }
           try { File.Copy(logSrcPath, logDstPath, true); } catch (Exception) { }
           File.Delete(logSrcPath);

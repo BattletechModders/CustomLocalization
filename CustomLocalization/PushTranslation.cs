@@ -45,11 +45,24 @@ namespace CustomTranslation {
     public string filename;
     public List<CustomTranslation.TranslateRecord> content;
     public Dictionary<string, CustomTranslation.TranslateRecord> map;
+    public void DebugLogDump() {
+      Log.LogWrite("\n" + JsonConvert.SerializeObject(content, Formatting.Indented) + "\n",true);
+    }
     public LocalizationFile() {
       changed = false;
       filename = string.Empty;
       content = new List<CustomTranslation.TranslateRecord>();
       map = new Dictionary<string, CustomTranslation.TranslateRecord>();
+    }
+    public void MergeFile(string filename) {
+      changed = false;
+      if (File.Exists(filename)) {
+        string loccont = File.ReadAllText(filename);
+        List<CustomTranslation.TranslateRecord> content = JsonConvert.DeserializeObject<List<CustomTranslation.TranslateRecord>>(loccont);
+        foreach (CustomTranslation.TranslateRecord locRec in content) {
+          this.Merge(locRec);
+        }
+      }
     }
     public LocalizationFile(string filename) {
       this.filename = filename;
@@ -98,9 +111,9 @@ namespace CustomTranslation {
         }
       }
     }
-    public void Save() {
+    public void Save(bool forced = false) {
       if (string.IsNullOrEmpty(filename)) { return; }
-      if (changed == false) { return; }
+      if ((changed == false)&&(forced == false)) { return; }
       File.WriteAllText(filename, JsonConvert.SerializeObject(content, Formatting.Indented));
     }
   }
@@ -209,6 +222,69 @@ namespace CustomTranslation {
       string original = (string)json["Description"]["Details"];
       if ((check == false) || (Core.stringsTable.ContainsKey(key) == true)) {
         json["Description"]["Details"] = CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
+        replaced.Add(key, original);
+      }
+      inc = json;
+      return true;
+    }
+  }
+  public class jtFirstName : jtProcGeneric {
+    public override string Name { get { return "Description.FirstName"; } }
+    public override bool proc(string modName, string filename, ref object inc, Dictionary<string, string> replaced, bool check) {
+      JObject json = inc as JObject;
+      if (json == null) { return false; }
+      if (json["Description"] == null) { return false; };
+      if (json["Description"]["FirstName"] == null) { return false; };
+      string value = (string)json["Description"]["FirstName"];
+      if (string.IsNullOrEmpty(value)) { return false; };
+      string key = modName + "." + filename + ".FirstName";
+      MatchCollection matches = CustomTranslation.Core.locRegEx.Matches(value);
+      if (matches.Count != 0) { foreach (Match match in matches) { replaced.Add(match.Groups[1].Value, String.Empty); }; return false; };
+      string original = (string)json["Description"]["FirstName"];
+      if ((check == false) || (Core.stringsTable.ContainsKey(key) == true)) {
+        json["Description"]["FirstName"] = CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
+        replaced.Add(key, original);
+      }
+      inc = json;
+      return true;
+    }
+  }
+  public class jtLastName : jtProcGeneric {
+    public override string Name { get { return "Description.LastName"; } }
+    public override bool proc(string modName, string filename, ref object inc, Dictionary<string, string> replaced, bool check) {
+      JObject json = inc as JObject;
+      if (json == null) { return false; }
+      if (json["Description"] == null) { return false; };
+      if (json["Description"]["LastName"] == null) { return false; };
+      string value = (string)json["Description"]["LastName"];
+      if (string.IsNullOrEmpty(value)) { return false; };
+      string key = modName + "." + filename + ".LastName";
+      MatchCollection matches = CustomTranslation.Core.locRegEx.Matches(value);
+      if (matches.Count != 0) { foreach (Match match in matches) { replaced.Add(match.Groups[1].Value, String.Empty); }; return false; };
+      string original = (string)json["Description"]["LastName"];
+      if ((check == false) || (Core.stringsTable.ContainsKey(key) == true)) {
+        json["Description"]["LastName"] = CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
+        replaced.Add(key, original);
+      }
+      inc = json;
+      return true;
+    }
+  }
+  public class jtCallsign : jtProcGeneric {
+    public override string Name { get { return "Description.Callsign"; } }
+    public override bool proc(string modName, string filename, ref object inc, Dictionary<string, string> replaced, bool check) {
+      JObject json = inc as JObject;
+      if (json == null) { return false; }
+      if (json["Description"] == null) { return false; };
+      if (json["Description"]["Callsign"] == null) { return false; };
+      string value = (string)json["Description"]["Callsign"];
+      if (string.IsNullOrEmpty(value)) { return false; };
+      string key = modName + "." + filename + ".Callsign";
+      MatchCollection matches = CustomTranslation.Core.locRegEx.Matches(value);
+      if (matches.Count != 0) { foreach (Match match in matches) { replaced.Add(match.Groups[1].Value, String.Empty); }; return false; };
+      string original = (string)json["Description"]["Callsign"];
+      if ((check == false) || (Core.stringsTable.ContainsKey(key) == true)) {
+        json["Description"]["Callsign"] = CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
         replaced.Add(key, original);
       }
       inc = json;
@@ -614,6 +690,78 @@ namespace CustomTranslation {
       if (CustomTranslation.Core.locRegEx.Matches(value).Count != 0) { replaced.Add(key, String.Empty); return false; };
       if ((check == false) || (Core.stringsTable.ContainsKey(key) == true)) {
         json["ShortDesc"] = CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
+        replaced.Add(key, value);
+      }
+      inc = json;
+      return true;
+    }
+  }
+  public class jtfirstName : jtProcGeneric {
+    public override string Name { get { return "firstName"; } }
+    public override bool proc(string modName, string filename, ref object inc, Dictionary<string, string> replaced, bool check) {
+      JObject json = inc as JObject;
+      if (json == null) { return false; }
+      if (json["firstName"] == null) { return false; };
+      string value = (string)json["firstName"];
+      if (string.IsNullOrEmpty(value)) { return false; };
+      string key = modName + "." + filename + ".firstName";
+      if (CustomTranslation.Core.locRegEx.Matches(value).Count != 0) { replaced.Add(key, String.Empty); return false; };
+      if ((check == false) || (Core.stringsTable.ContainsKey(key) == true)) {
+        json["firstName"] = CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
+        replaced.Add(key, value);
+      }
+      inc = json;
+      return true;
+    }
+  }
+  public class jtlastName : jtProcGeneric {
+    public override string Name { get { return "lastName"; } }
+    public override bool proc(string modName, string filename, ref object inc, Dictionary<string, string> replaced, bool check) {
+      JObject json = inc as JObject;
+      if (json == null) { return false; }
+      if (json["lastName"] == null) { return false; };
+      string value = (string)json["lastName"];
+      if (string.IsNullOrEmpty(value)) { return false; };
+      string key = modName + "." + filename + ".lastName";
+      if (CustomTranslation.Core.locRegEx.Matches(value).Count != 0) { replaced.Add(key, String.Empty); return false; };
+      if ((check == false) || (Core.stringsTable.ContainsKey(key) == true)) {
+        json["lastName"] = CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
+        replaced.Add(key, value);
+      }
+      inc = json;
+      return true;
+    }
+  }
+  public class jtcallsign : jtProcGeneric {
+    public override string Name { get { return "callsign"; } }
+    public override bool proc(string modName, string filename, ref object inc, Dictionary<string, string> replaced, bool check) {
+      JObject json = inc as JObject;
+      if (json == null) { return false; }
+      if (json["callsign"] == null) { return false; };
+      string value = (string)json["callsign"];
+      if (string.IsNullOrEmpty(value)) { return false; };
+      string key = modName + "." + filename + ".callsign";
+      if (CustomTranslation.Core.locRegEx.Matches(value).Count != 0) { replaced.Add(key, String.Empty); return false; };
+      if ((check == false) || (Core.stringsTable.ContainsKey(key) == true)) {
+        json["callsign"] = CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
+        replaced.Add(key, value);
+      }
+      inc = json;
+      return true;
+    }
+  }
+  public class jtrank : jtProcGeneric {
+    public override string Name { get { return "rank"; } }
+    public override bool proc(string modName, string filename, ref object inc, Dictionary<string, string> replaced, bool check) {
+      JObject json = inc as JObject;
+      if (json == null) { return false; }
+      if (json["rank"] == null) { return false; };
+      string value = (string)json["rank"];
+      if (string.IsNullOrEmpty(value)) { return false; };
+      string key = modName + "." + filename + ".rank";
+      if (CustomTranslation.Core.locRegEx.Matches(value).Count != 0) { replaced.Add(key, String.Empty); return false; };
+      if ((check == false) || (Core.stringsTable.ContainsKey(key) == true)) {
+        json["rank"] = CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
         replaced.Add(key, value);
       }
       inc = json;
