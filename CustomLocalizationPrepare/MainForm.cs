@@ -191,7 +191,7 @@ namespace CustormLocalizationPrepare {
     //                        MessageBox.Show(val);
     //                        val = GoogleTranslate.Translate(val);
     //                        translationCache.Add(nval, val);
-    //                        Log.LogWrite(0, "'" + replacements.Value + "' - '" + val + "'\n", true);
+    //                        Log.Debug.Write(0, "'" + replacements.Value + "' - '" + val + "'\n", true);
     //                        MessageBox.Show(val);
     //                        ++debugCounter;
     //                      } else {
@@ -226,7 +226,7 @@ namespace CustormLocalizationPrepare {
     //                              MessageBox.Show(val);
     //                              val = GoogleTranslate.Translate(val);
     //                              translationCache.Add(nval, val);
-    //                              Log.LogWrite(0, "'" + replacements.Value + "' - '" + val + "'\n", true);
+    //                              Log.Debug.Write(0, "'" + replacements.Value + "' - '" + val + "'\n", true);
     //                              MessageBox.Show(val);
     //                              ++debugCounter;
     //                            } else {
@@ -444,7 +444,7 @@ namespace CustormLocalizationPrepare {
                   val = GoogleTranslate.Translate(val);
                   locCache.Add(nval, val);
                   System.Threading.Thread.Sleep(1000);
-                  Log.LogWrite(0, "'" + replacements.Value + "' - '" + val + "'\n", true);
+                  Log.Debug?.Write(0, "'" + replacements.Value + "' - '" + val + "'\n", true);
                   //MessageBox.Show(val);
                   //++debugCounter;
                 } else {
@@ -480,7 +480,7 @@ namespace CustormLocalizationPrepare {
                         val = GoogleTranslate.Translate(val);
                         locCache.Add(nval, val);
                         System.Threading.Thread.Sleep(1000);
-                        Log.LogWrite(0, "'" + replacements.Value + "' - '" + val + "'\n", true);
+                        Log.Debug?.Write(0, "'" + replacements.Value + "' - '" + val + "'\n", true);
                         //MessageBox.Show(val);
                         //++debugCounter;
                       } else {

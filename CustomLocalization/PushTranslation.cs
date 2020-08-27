@@ -26,7 +26,7 @@ namespace CustomTranslation {
       } catch (Exception ex) {
         conversation = null;
         errorString = ex.ToString();
-        Log.LogWrite(FileName+"\n"+ex.ToString()+"\n");
+        Log.Debug?.Write(FileName+"\n"+ex.ToString()+"\n");
       }
     }
     public void Save() {
@@ -46,7 +46,7 @@ namespace CustomTranslation {
     public List<CustomTranslation.TranslateRecord> content;
     public Dictionary<string, CustomTranslation.TranslateRecord> map;
     public void DebugLogDump() {
-      Log.LogWrite("\n" + JsonConvert.SerializeObject(content, Formatting.Indented) + "\n",true);
+      Log.Debug?.Write("\n" + JsonConvert.SerializeObject(content, Formatting.Indented) + "\n",true);
     }
     public LocalizationFile() {
       changed = false;
@@ -1009,14 +1009,14 @@ namespace CustomTranslation {
     public override bool proc(string modName, string filename, ref object inc, Dictionary<string, string> replaced, bool check) {
       ConversationFile cFile = inc as ConversationFile;
       if (cFile == null) { return false; }
-      //Log.LogWrite("Conversation:"+cFile.FileName+"\n");
+      //Log.Debug?.Write("Conversation:"+cFile.FileName+"\n");
       if (cFile.conversation == null) {
-        //Log.LogWrite(" null\n");
+        //Log.Debug?.Write(" null\n");
         return false;
       };
-      //Log.LogWrite(" ui_name:" + cFile.conversation.ui_name + "\n");
+      //Log.Debug?.Write(" ui_name:" + cFile.conversation.ui_name + "\n");
 
-      //Log.LogWrite(" roots:"+ cFile.conversation.roots.Count + "\n");
+      //Log.Debug?.Write(" roots:"+ cFile.conversation.roots.Count + "\n");
       for(int t = 0; t < cFile.conversation.roots.Count; ++t) {
         string value = cFile.conversation.roots[t].responseText;
         string key = modName + "." + filename + ".root" + t + ".responseText";
@@ -1026,7 +1026,7 @@ namespace CustomTranslation {
           replaced.Add(key, value);
         }
       }
-      //Log.LogWrite(" nodes:\n");
+      //Log.Debug?.Write(" nodes:\n");
       for (int t = 0; t < cFile.conversation.nodes.Count; ++t) {
         string value = cFile.conversation.nodes[t].text;
         string key = modName + "." + filename + ".node" + t + ".text";
@@ -1035,9 +1035,9 @@ namespace CustomTranslation {
           cFile.conversation.nodes[t].text = CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
           replaced.Add(key, value);
         }
-        //Log.LogWrite(" [" + t + "] comment:" + cFile.conversation.nodes[t].comment + "\n");
-        //Log.LogWrite(" [" + t + "] text:" + cFile.conversation.nodes[t].text + "\n");
-        //Log.LogWrite(" [" + t + "] branches:" + cFile.conversation.nodes[t].branches.Count + "\n");
+        //Log.Debug?.Write(" [" + t + "] comment:" + cFile.conversation.nodes[t].comment + "\n");
+        //Log.Debug?.Write(" [" + t + "] text:" + cFile.conversation.nodes[t].text + "\n");
+        //Log.Debug?.Write(" [" + t + "] branches:" + cFile.conversation.nodes[t].branches.Count + "\n");
         for (int tt = 0; tt < cFile.conversation.nodes[t].branches.Count; ++tt) {
           value = cFile.conversation.nodes[t].branches[tt].responseText;
           key = modName + "." + filename + ".node" + t + ".branch"+tt+ ".responseText";

@@ -16,7 +16,7 @@ using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
 
 namespace CustomTranslation {
-  public static class Log {
+  public class Log {
     //private static string m_assemblyFile;
     private static string m_logfile;
     private static readonly Mutex mutex = new Mutex();
@@ -24,12 +24,13 @@ namespace CustomTranslation {
     private static StringBuilder m_cache = new StringBuilder();
     private static StreamWriter m_fs = null;
     private static readonly int flushBufferLength = 16 * 1024;
+    private static readonly Log m_log = new Log();
     public static bool flushThreadActive = true;
     public static Thread flushThread = new Thread(flushThreadProc);
     public static void flushThreadProc() {
       while (Log.flushThreadActive == true) {
         Thread.Sleep(10 * 1000);
-        //Log.LogWrite("flush\n");
+        //Log.Debug?.Write("flush\n");
         //if (Core.translationSaver == null) {
         //  Core.translationSaver = UnityGameInstance.Instance.gameObject.AddComponent<TranslationSaver>();
         //}
@@ -77,13 +78,45 @@ namespace CustomTranslation {
       //i'm sertanly don't know what to do
       //}
     }
+    public void Write(string line, bool isCritical = false) {
+      try {
+        if ((Core.Settings.debugLog) || (isCritical)) {
+          if (Log.mutex.WaitOne(1000)) {
+            m_fs.Write(line);
+            Log.mutex.ReleaseMutex();
+          }
+        }
+      } catch (Exception) {
+        //i'm sertanly don't know what to do
+      }
+    }
+    public void Write(int initiation, string line, bool eol = false, bool timestamp = false) {
+      string init = new string(' ', initiation);
+      string prefix = String.Empty;
+      if (timestamp) { prefix = DateTime.Now.ToString("[HH:mm:ss.fff]"); }
+      if (initiation > 0) { prefix += init; };
+      if (eol) {
+        m_log.Write(prefix + line + "\n");
+      } else {
+        m_log.Write(prefix + line);
+      }
+    }
+    public static Log Debug{
+        get
+        {
+            if (Core.Settings.debugLog) {
+                return m_log;
+            }
+            return null;
+        }
+    }
   }
   [HarmonyPatch(typeof(SG_Stores_MultiPurchasePopup))]
   [HarmonyPatch("Refresh")]
   [HarmonyPatch(MethodType.Normal)]
   public static class SG_Stores_MultiPurchasePopup_Refresh {
     public static void Postfix(SG_Stores_MultiPurchasePopup __instance, LocalizableText ___TitleText, string ___itemName) {
-      Log.LogWrite("SG_Stores_MultiPurchasePopup.Refresh dirty hack: "+ ___itemName+"\n");
+      Log.Debug?.Write("SG_Stores_MultiPurchasePopup.Refresh dirty hack: "+ ___itemName+"\n");
       ___TitleText.SetText(new Text("SELL: "+ ___itemName).ToString());
     }
   }
@@ -99,11 +132,11 @@ namespace CustomTranslation {
         return;
       }
       MatchCollection matches = Core.locRegEx.Matches(text);
-      //Log.LogWrite(text + "\n");
+      //Log.Debug?.Write(text + "\n");
       string original = text;
       if (matches.Count != 0) {
         for (int t = 0; t < matches.Count; ++t) {
-          //Log.LogWrite(" '" + matches[t].Groups[1].Value + "':" + matches[t].Index + ":" + matches[t].Length + "\n");
+          //Log.Debug?.Write(" '" + matches[t].Groups[1].Value + "':" + matches[t].Index + ":" + matches[t].Length + "\n");
         }
         StringBuilder newText = new StringBuilder();
         int pos = 0;
@@ -120,31 +153,31 @@ namespace CustomTranslation {
     public static bool Prefix(Text __instance, ref string text, ref object[] args) {
       try {
         if (string.IsNullOrEmpty(text)) { return true; };
-        Log.LogWrite("Localize.Text:" + text);
+        Log.Debug?.Write("Localize.Text:" + text);
         Text_Append.Localize(ref text);
-        Log.LogWrite("->"+text);
+        Log.Debug?.Write("->"+text);
         if (args != null) {
-          //Log.LogWrite(" params:" + args.Length + "\n");
+          //Log.Debug?.Write(" params:" + args.Length + "\n");
           for (int t = 0; t < args.Length; ++t) {
             if (args[t] == null) { continue; };
             if (args[t].GetType() == typeof(System.String)) {
               string arg = (string)args[t];
-              Log.LogWrite(" "+arg);
+              Log.Debug?.Write(" "+arg);
               Text_Append.Localize(ref arg);
               args[t] = arg;
-              Log.LogWrite("->" + arg);
+              Log.Debug?.Write("->" + arg);
             }
-            //Log.LogWrite("  string param:" + args[t] + ":"+args[t].GetType()+"\n");
+            //Log.Debug?.Write("  string param:" + args[t] + ":"+args[t].GetType()+"\n");
           }
         }
-        Log.LogWrite("\n");
+        Log.Debug?.Write("\n");
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + " " + text + "\n",true);
+        Log.Debug?.Write(e.ToString() + " " + text + "\n",true);
       }
       return true;
     }
     public static void Postfix(Text __instance) {
-      Log.LogWrite(" result:" + __instance+"\n");
+      Log.Debug?.Write(" result:" + __instance+"\n");
     }
   }
   public class TranslateRecord {
@@ -170,15 +203,15 @@ namespace CustomTranslation {
     public static Dictionary<string, string> localizationCache = new Dictionary<string, string>();
     public static void GatherLocalizations(string directory) {
       string locfile = Path.Combine(directory, Core.LocalizationFileName);
-      Log.LogWrite("File:" + locfile + "\n");
+      Log.Debug?.Write("File:" + locfile + "\n");
       if (File.Exists(locfile)) {
         try {
           string content = File.ReadAllText(locfile);
           List<TranslateRecord> locs = JsonConvert.DeserializeObject<List<TranslateRecord>>(content);
           foreach (var loc in locs) {
-            Log.LogWrite(" loc:" + loc.Name + "\n");
+            Log.Debug?.Write(" loc:" + loc.Name + "\n");
             foreach (var locval in loc.Localization) {
-              Log.LogWrite("  " + locval.Key + ":" + locval.Value + "\n");
+              Log.Debug?.Write("  " + locval.Key + ":" + locval.Value + "\n");
             }
             if (Core.stringsTable.ContainsKey(loc.Name) == false) {
               Core.stringsTable.Add(loc.Name, loc.Localization);
@@ -191,7 +224,7 @@ namespace CustomTranslation {
             }
           }
         } catch (Exception e) {
-          Log.LogWrite(locfile + " exception " + e.ToString() + "\n");
+          Log.Debug?.Write(locfile + " exception " + e.ToString() + "\n");
         }
       }
       foreach (string d in Directory.GetDirectories(directory)) { GatherLocalizations(d);};
@@ -209,14 +242,14 @@ namespace CustomTranslation {
     public static void SaveCurrentTranslation() {
       //string path = Path.Combine(Log.BaseDirectory, Core.Settings.language+"_locTable.json");
       //File.WriteAllText(path, JsonConvert.SerializeObject(flushableTranslation,Formatting.Indented));
-      //Log.LogWrite("saved translation to "+path+"\n", true);
+      //Log.Debug?.Write("saved translation to "+path+"\n", true);
     }
     public static void Init(string directory, string settingsJson) {
       Log.BaseDirectory = directory;
       Log.InitLog();
       //settingsJson.get
       Core.Settings = JsonConvert.DeserializeObject<CustomTranslation.CTSettings>(settingsJson);
-      Log.LogWrite("Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + "\n", true);
+      Log.Debug?.Write("Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + "\n", true);
       try {
         Core.GatherLocalizations(Path.Combine(directory, ".."));
         var harmony = HarmonyInstance.Create("io.mission.customlocalization");
@@ -225,7 +258,7 @@ namespace CustomTranslation {
         //translationSaver.AddComponent<TranslationSaver>();
         //translationSaver.SetActive(true);
       } catch (Exception e) {
-        Log.LogWrite(e.ToString() + "\n");
+        Log.Debug?.Write(e.ToString() + "\n");
       }
     }
   }
