@@ -9,16 +9,18 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomLocalizationSetup", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomLocalizationPrepare", "CustomLocalizationPrepare\CustomLocalizationPrepare.csproj", "{3CD560F2-3272-4AB4-B540-7FF4FC1E097D}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9409F826-87C7-4C3A-B58A-8FB402D100CB}"
+	ProjectSection(SolutionItems) = preProject
+		mod.json = mod.json
+		Readme.txt = Readme.txt
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{9BAAF1D5-1A44-431E-BA61-75972AB11DAB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9BAAF1D5-1A44-431E-BA61-75972AB11DAB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9BAAF1D5-1A44-431E-BA61-75972AB11DAB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9BAAF1D5-1A44-431E-BA61-75972AB11DAB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5F769066-F82E-4EAE-B57B-71BD17BA9A99}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5F769066-F82E-4EAE-B57B-71BD17BA9A99}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5F769066-F82E-4EAE-B57B-71BD17BA9A99}.Release|Any CPU.ActiveCfg = Release|Any CPU

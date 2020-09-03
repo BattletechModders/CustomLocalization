@@ -17,14 +17,9 @@ namespace CustomLocalizationSetup {
     public MainForm() {
       InitializeComponent();
       try {
-        Core.Settings = new CTSettings();
-        Core.Settings.debugLog = true;
-        Log.BaseDirectory = Path.GetDirectoryName(Application.ExecutablePath);
-        Log.InitLog();
-        string baseDirectory = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "..");
-        Core.GatherLocalizations(baseDirectory);
         partsList = new List<object>();
-        partsList.Add(new jtUIname());
+
+        /*partsList.Add(new jtUIname());
         partsList.Add(new jtName());
         partsList.Add(new jtDetails());
         partsList.Add(new jtEffectDataName());
@@ -51,7 +46,7 @@ namespace CustomLocalizationSetup {
         partsList.Add(new jtOptionsDescriptionDetails());
         partsList.Add(new jtOptionsResultSetsDescriptionName());
         partsList.Add(new jtOptionsResultSetsDescriptionDetails());
-        partsList.Add(new jtConversations());
+        partsList.Add(new jtConversations());*/
       } catch (Exception e) {
         Console.WriteLine(e.ToString());
       }
@@ -63,23 +58,25 @@ namespace CustomLocalizationSetup {
       Environment.Exit(0);
       Application.ExitThread();
     }
-
+    public bool IsInVanilla(string value) {
+      return false;
+    }
     private void backgroundWorker_DoWork(object sender, DoWorkEventArgs e) {
       try {
-        List<ModRecord> mods = ModRecord.GatherMods(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), ".."));
+        List<ModDirRecord> mods = ModDirRecord.GatherMods(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), ".."));
         Dictionary<string, string> jsonUpdatedContent = new Dictionary<string, string>();
         Dictionary<string, ConversationFile> convUpdatedContent = new Dictionary<string, ConversationFile>();
         int modcounter = 0;
-        foreach (ModRecord mod in mods) {
+        foreach (ModDirRecord mod in mods) {
           backgroundWorker.ReportProgress((int)Math.Round((float)modcounter* 100.0f/(float)mods.Count)); ++modcounter;
-          string modName = ModRecord.Normilize(mod.Name);
+          string modName = ModDirRecord.Normilize(mod.name);
           //MessageBox.Show(modName);
           List<string> jsonsPath = new List<string>();
-          ModRecord.GetAllJsons(mod.Path, ref jsonsPath, 0);
+          //ModDirRecord.GetAllJsons(mod.path, ref jsonsPath, 0);
           foreach (string jsonPath in jsonsPath) {
             bool updated = false;
             //MessageBox.Show(jsonPath);
-            string filename = ModRecord.Normilize(Path.GetFileNameWithoutExtension(jsonPath));
+            string filename = ModDirRecord.Normilize(Path.GetFileNameWithoutExtension(jsonPath));
             object content = null;
             if (Path.GetFileName(jsonPath).ToUpper() == "LOCALIZATION.JSON") { continue; }
             if (Path.GetExtension(jsonPath).ToUpper() == ".JSON") {
@@ -89,10 +86,10 @@ namespace CustomLocalizationSetup {
               content = new ConversationFile(jsonPath);
             }
             foreach (var jtproc in partsList) {
-              jtProcGeneric jtProc = jtproc as jtProcGeneric;
+              jtProcGenericEx jtProc = jtproc as jtProcGenericEx;
               if (jtProc == null) { continue; }
               Dictionary<string, string> replaced = new Dictionary<string, string>();
-              jtProc.proc(modName, filename, ref content, replaced, true);
+              //jtProc.proc(modName, filename, ref content, replaced, true, new Func<string, bool>(IsInVanilla));
               foreach (var replacements in replaced) {
                 if (string.IsNullOrEmpty(replacements.Value) == false) { updated = true; }
               }

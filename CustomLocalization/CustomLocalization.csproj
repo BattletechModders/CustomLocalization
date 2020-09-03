@@ -53,10 +53,10 @@
       <HintPath>..\..\BattleTech_Data\Managed\ShadowrunDTO.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Security" />
     <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="Unity.TextMeshPro, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -64,6 +64,10 @@
     </Reference>
     <Reference Include="UnityEngine">
       <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.AssetBundleModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\BattleTech_Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -75,12 +79,27 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core.cs" />
+    <Compile Include="DescriptionDef.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PushTranslation.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Mods\CustomLocalization"
+    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)..\..\Mods\CustomLocalization"
+copy /Y "$(TargetPath)" "$(ProjectDir)..\..\RogueTechWorking\CustomLocalization"
+copy /Y "$(TargetPath)" "$(ProjectDir)..\..\Release_CAC\Release\CustomBundle\CustomLocalization"
+copy /Y "$(ProjectDir)..\mod.json" "$(ProjectDir)..\..\Mods\CustomLocalization"
+copy /Y "$(ProjectDir)..\mod.json" "$(ProjectDir)..\..\RogueTechWorking\CustomLocalization"
+copy /Y "$(ProjectDir)..\mod.json" "$(ProjectDir)..\..\Release_CAC\Release\CustomBundle\CustomLocalization"
+copy /Y "$(ProjectDir)..\Readme.txt" "$(ProjectDir)..\..\Mods\CustomLocalization"
+copy /Y "$(ProjectDir)..\Readme.txt" "$(ProjectDir)..\..\RogueTechWorking\CustomLocalization"
+copy /Y "$(ProjectDir)..\Readme.txt" "$(ProjectDir)..\..\Release_CAC\Release\CustomBundle\CustomLocalization"
+xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles" "$(ProjectDir)..\..\Mods\CustomLocalization"
+xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles" "$(ProjectDir)..\..\RogueTechWorking\CustomLocalization"
+xcopy /Y /S /E "$(ProjectDir)..\AdditionalFiles" "$(ProjectDir)..\..\Release_CAC\Release\CustomBundle\CustomLocalization"
 </PostBuildEvent>
   </PropertyGroup>
 </Project>
