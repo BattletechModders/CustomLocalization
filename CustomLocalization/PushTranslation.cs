@@ -32,7 +32,7 @@ namespace CustomTranslation {
       } catch (Exception ex) {
         conversation = null;
         errorString = ex.ToString();
-        Log.LogWrite(FileName + "\n" + ex.ToString() + "\n");
+        Log.M?.LogWrite(FileName + "\n" + ex.ToString() + "\n");
       }
     }
     public void Save() {
@@ -52,7 +52,7 @@ namespace CustomTranslation {
     public List<CustomTranslation.TranslateRecord> content;
     public Dictionary<string, CustomTranslation.TranslateRecord> map;
     public void DebugLogDump() {
-      Log.LogWrite("\n" + JsonConvert.SerializeObject(content, Formatting.Indented) + "\n", true);
+      Log.M?.LogWrite("\n" + JsonConvert.SerializeObject(content, Formatting.Indented) + "\n", true);
     }
     public LocalizationFile() {
       changed = false;
@@ -205,15 +205,15 @@ namespace CustomTranslation {
         if (dirs.ContainsKey(trgKey)) { continue; }
         dirs.Add(trgKey, trgDef);
       }
-      Log.TWL(0, "merging:" + second.filename);
+      Log.M?.TWL(0, "merging:" + second.filename);
       foreach (LocalizationRecordDef nlocRec in second.content) {
-        Log.WL(1, nlocRec.id);
+        Log.M?.WL(1, nlocRec.id);
         if (dict.TryGetValue(nlocRec.id, out LocalizationRecordDef locRec) == false) {
-          Log.WL(2, "new");
+          Log.M?.WL(2, "new");
           this.content.Add(nlocRec);
           dict.Add(nlocRec.id, nlocRec);
         } else {
-          Log.WL(2, "exists:" + locRec.original + ":" + nlocRec.original);
+          Log.M?.WL(2, "exists:" + locRec.original + ":" + nlocRec.original);
           if (replaceContent) { locRec.content = nlocRec.content; }
           if (locRec.original != nlocRec.original) {
             locRec.prevOriginal = locRec.original;
@@ -392,7 +392,7 @@ namespace CustomTranslation {
       JObject json = inc as JObject;
       if (json == null) { return false; }
       if (json[L1] == null) { return false; };
-      Log.WL(2, L1 + ":" + json[L1].Type);
+      Log.M?.WL(2, L1 + ":" + json[L1].Type);
       if (json[L1].Type != JTokenType.Object) { return false; };
       if (json[L1][L2] == null) { return false; };
       string value = (string)json[L1][L2];
@@ -1471,14 +1471,14 @@ namespace CustomTranslation {
     public override bool proc(string modName, string filename, ref object inc, Dictionary<string, string> replaced, bool check, Func<string, bool> isInVanilla) {
       ConversationFile cFile = inc as ConversationFile;
       if (cFile == null) { return false; }
-      //Log.LogWrite("Conversation:"+cFile.FileName+"\n");
+      //Log.M?.LogWrite("Conversation:"+cFile.FileName+"\n");
       if (cFile.conversation == null) {
-        //Log.LogWrite(" null\n");
+        //Log.M?.LogWrite(" null\n");
         return false;
       };
-      //Log.LogWrite(" ui_name:" + cFile.conversation.ui_name + "\n");
+      //Log.M?.LogWrite(" ui_name:" + cFile.conversation.ui_name + "\n");
 
-      //Log.LogWrite(" roots:"+ cFile.conversation.roots.Count + "\n");
+      //Log.M?.LogWrite(" roots:"+ cFile.conversation.roots.Count + "\n");
       for(int t = 0; t < cFile.conversation.roots.Count; ++t) {
         string value = cFile.conversation.roots[t].responseText;
         if (isInVanilla(value)) { continue; }
@@ -1489,7 +1489,7 @@ namespace CustomTranslation {
           replaced.Add(key, value);
         }
       }
-      //Log.LogWrite(" nodes:\n");
+      //Log.M?.LogWrite(" nodes:\n");
       for (int t = 0; t < cFile.conversation.nodes.Count; ++t) {
         string value = cFile.conversation.nodes[t].text;
         if (isInVanilla(value)) { continue; }
@@ -1499,9 +1499,9 @@ namespace CustomTranslation {
           cFile.conversation.nodes[t].text = CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
           replaced.Add(key, value);
         }
-        //Log.LogWrite(" [" + t + "] comment:" + cFile.conversation.nodes[t].comment + "\n");
-        //Log.LogWrite(" [" + t + "] text:" + cFile.conversation.nodes[t].text + "\n");
-        //Log.LogWrite(" [" + t + "] branches:" + cFile.conversation.nodes[t].branches.Count + "\n");
+        //Log.M?.LogWrite(" [" + t + "] comment:" + cFile.conversation.nodes[t].comment + "\n");
+        //Log.M?.LogWrite(" [" + t + "] text:" + cFile.conversation.nodes[t].text + "\n");
+        //Log.M?.LogWrite(" [" + t + "] branches:" + cFile.conversation.nodes[t].branches.Count + "\n");
         for (int tt = 0; tt < cFile.conversation.nodes[t].branches.Count; ++tt) {
           value = cFile.conversation.nodes[t].branches[tt].responseText;
           if (isInVanilla(value)) { continue; }

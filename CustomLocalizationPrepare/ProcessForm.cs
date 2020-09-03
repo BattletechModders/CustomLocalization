@@ -24,10 +24,10 @@ namespace CustomLocalizationPrepare {
     }
     private void addIndexes(LocalizationIndexDirectory parent, ref int count) {
       string[] dirs = Directory.GetDirectories(parent.path);
-      Log.TWL(0, "addIndexes:" + parent.path);
+      Log.M?.TWL(0, "addIndexes:" + parent.path);
       foreach(string dir in dirs) {
         if (Path.GetFileName(dir).StartsWith(".")) { continue; }
-        Log.WL(1, "dir:" + dir);
+        Log.M?.WL(1, "dir:" + dir);
         LocalizationIndexDirectory child = new LocalizationIndexDirectory();
         child.path = dir;
         child.name = Path.GetFileName(dir);
@@ -41,9 +41,9 @@ namespace CustomLocalizationPrepare {
       }
     }
     private void checkIndexes(LocalizationIndexDirectory parent, ref int count) {
-      Log.TWL(0, "checkIndexes:" + parent.name);
+      Log.M?.TWL(0, "checkIndexes:" + parent.name);
       foreach (LocalizationIndexDirectory child in parent.childs) {
-        Log.WL(1, "child:" + child.path);
+        Log.M?.WL(1, "child:" + child.path);
         HashSet<string> cfiles = new HashSet<string>();
         foreach (var file in child.files) {
           cfiles.Add(file.Key);
@@ -51,7 +51,7 @@ namespace CustomLocalizationPrepare {
         foreach (string file in cfiles) {
           string filepath = Path.Combine(child.path, file);
           string filename = Path.GetFileNameWithoutExtension(filepath);
-          Log.WL(1, "file:" + file+":"+filename+":"+filepath);
+          Log.M?.WL(1, "file:" + file+":"+filename+":"+filepath);
           object content = null;
           try {
             if (Path.GetExtension(filepath).ToUpper() == ".JSON") {
@@ -63,19 +63,19 @@ namespace CustomLocalizationPrepare {
           } catch (Exception ex) {
             count += Core.localizationMethods.Count;
             backgroundWorker.ReportProgress(count);
-            Log.TWL(0, ex.ToString(), true);
+            Log.M?.TWL(0, ex.ToString(), true);
             continue;
           }
           foreach(var proc in Core.localizationMethods) {
             HashSet<string> keys = new HashSet<string>();
-            Log.WL(2, "proc:"+proc.Value.Name+":"+keys.Count);
+            Log.M?.WL(2, "proc:"+proc.Value.Name+":"+keys.Count);
             try {
               proc.Value.check(string.Empty, filename, ref content, ref keys);
               if (keys.Count != 0) {
                 child.files[file].Add(proc.Value.Name, keys.ToList());
               }
             }catch(Exception e) {
-              Log.TWL(0, e.ToString(), true);
+              Log.M?.TWL(0, e.ToString(), true);
             }
             ++count;
             backgroundWorker.ReportProgress(count);
@@ -105,7 +105,7 @@ namespace CustomLocalizationPrepare {
           int count = 0;
           foreach (LocalizationTask task in tasks) { count += task.procList.Count; }
           this.progressBar.Maximum = count;
-          Log.TWL(0, "Update:"+ locFile.Value.filename);
+          Log.M?.TWL(0, "Update:"+ locFile.Value.filename);
           LocalizationDef localizationDef = this.CreateLocalizationFile(tasks,true);
           localizationDef.filename = locFile.Key;
           updated.Add(localizationDef);
@@ -116,7 +116,7 @@ namespace CustomLocalizationPrepare {
           updated[i] = localizationDef;
         }
       }catch(Exception e) {
-        Log.TWL(0,e.ToString(),true);
+        Log.M?.TWL(0,e.ToString(),true);
       }
     }
     public LocalizationDef CreateLocalizationFile(List<LocalizationTask> pRecs,bool addExisting = false) {
@@ -128,7 +128,7 @@ namespace CustomLocalizationPrepare {
       HashSet<string> affected = new HashSet<string>();
       foreach (LocalizationTask prepareRecord in pRecs) {
         object content = null;
-        Log.TWL(0, "prepare:" + prepareRecord.filename);
+        Log.M?.TWL(0, "prepare:" + prepareRecord.filename);
         affected.Add(Path.GetFileName(prepareRecord.filename));
         try {
           if (Path.GetExtension(prepareRecord.filename).ToUpper() == ".JSON") {
@@ -138,7 +138,7 @@ namespace CustomLocalizationPrepare {
             content = new ConversationFile(prepareRecord.filename);
           }
         } catch (Exception ex) {
-          Log.TWL(0, ex.ToString(), true);
+          Log.M?.TWL(0, ex.ToString(), true);
           continue;
         }
         string filename = Path.GetFileNameWithoutExtension(prepareRecord.filename);
@@ -146,7 +146,7 @@ namespace CustomLocalizationPrepare {
           try {
             Dictionary<string, string> originals = new Dictionary<string, string>();
             proc.extract(prepareRecord.mod.name, filename, ref content, originals);
-            Log.WL(1, "extract:" + proc.Name+":"+originals.Count);
+            Log.M?.WL(1, "extract:" + proc.Name+":"+originals.Count);
             TargetDef targetDef = null;
             foreach (var orig in originals) {
               if (ids.Contains(orig.Key)) { continue; }
@@ -179,9 +179,9 @@ namespace CustomLocalizationPrepare {
               }
             }
           } catch (Exception ex) {
-            Log.TWL(0, filename);
-            Log.TWL(0, proc.Name);
-            Log.TWL(0, ex.ToString(), true);
+            Log.M?.TWL(0, filename);
+            Log.M?.TWL(0, proc.Name);
+            Log.M?.TWL(0, ex.ToString(), true);
           }
           ++counter;
           backgroundWorker.ReportProgress(counter);
@@ -189,14 +189,14 @@ namespace CustomLocalizationPrepare {
       };
       locDef.content = locDef.content.OrderBy(x => x.id).ToList();
       locDef.files = affected.ToList();
-      Log.TWL(0, "result:" + (locDef == null ? "null" : "not null"));
+      Log.M?.TWL(0, "result:" + (locDef == null ? "null" : "not null"));
       return locDef;
     }
     public void LocalizationReverce(List<LocalizationTask> prepareRecords) {
       int counter = 0;
       foreach (LocalizationTask prepareRecord in prepareRecords) {
         object content = null;
-        Log.TWL(0, "prepare:" + prepareRecord.filename);
+        Log.M?.TWL(0, "prepare:" + prepareRecord.filename);
         try {
           if (Path.GetExtension(prepareRecord.filename).ToUpper() == ".JSON") {
             string jsonCont = File.ReadAllText(prepareRecord.filename);
@@ -208,7 +208,7 @@ namespace CustomLocalizationPrepare {
           bool reversed = false;
           foreach (jtProcGenericEx proc in prepareRecord.procList) {
             Dictionary<string, string> originals = new Dictionary<string, string>();
-            Log.WL(1, "reverse:" + proc.Name);
+            Log.M?.WL(1, "reverse:" + proc.Name);
             if (proc.reverse(ref content)) { reversed = true; }
             ++counter;
             backgroundWorker.ReportProgress(counter);
@@ -220,8 +220,8 @@ namespace CustomLocalizationPrepare {
           } else if (Path.GetExtension(prepareRecord.filename).ToUpper() == ".BYTES") {
           }
         } catch (Exception ex) {
-          Log.TWL(0, prepareRecord.filename, true);
-          Log.TWL(0, ex.ToString(), true);
+          Log.M?.TWL(0, prepareRecord.filename, true);
+          Log.M?.TWL(0, ex.ToString(), true);
         }
       };
     }
@@ -235,7 +235,7 @@ namespace CustomLocalizationPrepare {
           case ProcessCommand.Update: UpdateDefinitions(); break;
         }
       } catch(Exception ex) {
-        Log.TWL(0,ex.ToString(),true);
+        Log.M?.TWL(0,ex.ToString(),true);
       }
     }
 

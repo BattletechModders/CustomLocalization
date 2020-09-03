@@ -162,7 +162,7 @@ namespace BTLocalization {
     }
 
     public class AppendTextPart : BTLocalization.Text.Part {
-      public BTLocalization.Text text;
+      public new BTLocalization.Text text;
 
       public AppendTextPart(BTLocalization.Text text) {
         this.text = text;

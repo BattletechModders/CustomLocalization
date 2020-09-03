@@ -13,7 +13,7 @@ namespace CustomTranslation {
       string unlock = val;
       Text_Append.Localize(ref val);
       __result = val;
-      Log.LogWrite("BaseDescriptionDef.Name "+__instance.Id+" "+unlock+"->"+__result+"\n");
+      Log.M?.LogWrite("BaseDescriptionDef.Name "+__instance.Id+" "+unlock+"->"+__result+"\n");
       return false;
     }
   }
@@ -26,7 +26,7 @@ namespace CustomTranslation {
       string unlock = val;
       Text_Append.Localize(ref val);
       __result = val;
-      Log.LogWrite("BaseDescriptionDef.Details " + __instance.Id + " " + unlock + "->" + __result + "\n");
+      Log.M?.LogWrite("BaseDescriptionDef.Details " + __instance.Id + " " + unlock + "->" + __result + "\n");
       return false;
     }
   }*/
@@ -38,7 +38,7 @@ namespace CustomTranslation {
       if (string.IsNullOrEmpty(__result)) { return; }
       string unlock = __result;
       Text_Append.Localize(ref __result);
-      Log.LogWrite("DescriptionDef.UIName " + __instance.Id + " " + unlock + "->" + __result + "\n");
+      Log.M?.LogWrite("DescriptionDef.UIName " + __instance.Id + " " + unlock + "->" + __result + "\n");
     }
   }
   [HarmonyPatch(typeof(BaseDescriptionDef))]
@@ -49,7 +49,7 @@ namespace CustomTranslation {
       if (string.IsNullOrEmpty(__result)) { return; }
       string unlock = __result;
       Text_Append.Localize(ref __result);
-      Log.LogWrite("BaseDescriptionDef.Name " + __instance.Id + " " + unlock + "->" + __result + "\n");
+      Log.M?.LogWrite("BaseDescriptionDef.Name " + __instance.Id + " " + unlock + "->" + __result + "\n");
     }
   }
   [HarmonyPatch(typeof(BaseDescriptionDef))]
@@ -60,7 +60,7 @@ namespace CustomTranslation {
       if (string.IsNullOrEmpty(__result)) { return; }
       string unlock = __result;
       Text_Append.Localize(ref __result);
-      Log.LogWrite("DescriptionDef.Details " + __instance.Id + " " + unlock + "->" + __result + "\n");
+      Log.M?.LogWrite("DescriptionDef.Details " + __instance.Id + " " + unlock + "->" + __result + "\n");
     }
   }
 }

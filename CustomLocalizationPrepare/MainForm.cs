@@ -215,7 +215,7 @@ namespace CustormLocalizationPrepare {
     //                        MessageBox.Show(val);
     //                        val = GoogleTranslate.Translate(val);
     //                        translationCache.Add(nval, val);
-    //                        Log.LogWrite(0, "'" + replacements.Value + "' - '" + val + "'\n", true);
+    //                        Log.M?.LogWrite(0, "'" + replacements.Value + "' - '" + val + "'\n", true);
     //                        MessageBox.Show(val);
     //                        ++debugCounter;
     //                      } else {
@@ -250,7 +250,7 @@ namespace CustormLocalizationPrepare {
     //                              MessageBox.Show(val);
     //                              val = GoogleTranslate.Translate(val);
     //                              translationCache.Add(nval, val);
-    //                              Log.LogWrite(0, "'" + replacements.Value + "' - '" + val + "'\n", true);
+    //                              Log.M?.LogWrite(0, "'" + replacements.Value + "' - '" + val + "'\n", true);
     //                              MessageBox.Show(val);
     //                              ++debugCounter;
     //                            } else {
@@ -334,12 +334,12 @@ namespace CustormLocalizationPrepare {
       }
       int complexity = 0;
       foreach (LocalizationIndexDirectory mod in mods) {
-        Log.TWL(0, "ModDirRecord:" + mod.name + ":" + mod.path);
+        Log.M?.TWL(0, "ModDirRecord:" + mod.name + ":" + mod.path);
         foreach (var jsonName in mod.files) {
           string jsonPath = Path.Combine(mod.path, jsonName.Key);
           tasks.Add(new LocalizationTask(mod, jsonPath, procs));
           complexity += procs.Count;
-          Log.WL(1, "task:" + jsonPath);
+          Log.M?.WL(1, "task:" + jsonPath);
         }
       }
       ProcessForm processForm = new ProcessForm();
@@ -756,7 +756,7 @@ namespace CustormLocalizationPrepare {
                   val = GoogleTranslate.Translate(val);
                   locCache.Add(nval, val);
                   System.Threading.Thread.Sleep(1000);
-                  Log.LogWrite(0, "'" + replacements.Value + "' - '" + val + "'\n", true);
+                  Log.M?.LogWrite(0, "'" + replacements.Value + "' - '" + val + "'\n", true);
                   //MessageBox.Show(val);
                   //++debugCounter;
                 } else {
@@ -821,7 +821,7 @@ namespace CustormLocalizationPrepare {
                       val = GoogleTranslate.Translate(val);
                       locCache.Add(nval, val);
                       System.Threading.Thread.Sleep(1000);
-                      Log.LogWrite(0, "'" + replacements.Value + "' - '" + val + "'\n", true);
+                      Log.M?.LogWrite(0, "'" + replacements.Value + "' - '" + val + "'\n", true);
                       //MessageBox.Show(val);
                       //++debugCounter;
                     } else {
@@ -927,9 +927,9 @@ namespace CustormLocalizationPrepare {
     }
     private static LocalizationIndexDirectory findIndex(LocalizationIndexDirectory index, LocalizationRecordDef locRec) {
       string filename = locRec.filename + ".json";
-      Log.WL(1,"findIndex:"+index.name+":"+filename);
+      Log.M?.WL(1,"findIndex:"+index.name+":"+filename);
       if (index.files.TryGetValue(filename, out var processors)) {
-        Log.WL(2, "file found:"+ locRec.processor);
+        Log.M?.WL(2, "file found:"+ locRec.processor);
         if (processors.TryGetValue(locRec.processor, out var keys)) {
           if (keys.Contains(locRec.id)) {
             return index;
@@ -964,13 +964,13 @@ namespace CustormLocalizationPrepare {
       }
     }
     public static List<LocalizationTask> gatherUpdateTasks(this LocalizationDef def) {
-      Log.TWL(0, "gatherUpdateTasks:" + def.filename);
+      Log.M?.TWL(0, "gatherUpdateTasks:" + def.filename);
       List<LocalizationTask> result = new List<LocalizationTask>();
       Dictionary<string, updateTaskInfo> affectedFiles = new Dictionary<string, updateTaskInfo>();
       foreach(LocalizationRecordDef locRec in def.content) {
         LocalizationIndexDirectory index = locRec.findIndex();
         if (index == null) {
-          Log.WL(1, "index not found:" + locRec.id+":"+locRec.filename);
+          Log.M?.WL(1, "index not found:" + locRec.id+":"+locRec.filename);
           continue;
         }
         string filename = locRec.filename+".json";
