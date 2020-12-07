@@ -711,6 +711,7 @@ namespace CustomTranslation {
         trRec.Name = locRec.id;
         trRec.Localization = new Dictionary<Strings.Culture, string>();
         trRec.Localization.Add(def.culture, locRec.content);
+        trRec.Localization.Add(Strings.Culture.CULTURE_EN_US, locRec.original);
         trRec.Original = locRec.original;
         trRec.Commentary = locRec.localizatorComment;
         if (Core.localizationMethods.TryGetValue(locRec.processor, out jtProcGenericEx proc)) {
