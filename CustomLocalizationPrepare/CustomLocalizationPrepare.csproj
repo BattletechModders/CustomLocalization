@@ -40,9 +40,6 @@
     <Reference Include="Assembly-CSharp">
       <HintPath>..\..\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
-    <Reference Include="CustomLocalization">
-      <HintPath>..\..\Mods\CustomLocalization\CustomLocalization.dll</HintPath>
-    </Reference>
     <Reference Include="EPPlus, Version=4.5.3.2, Culture=neutral, PublicKeyToken=ea159fdaa78159a1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\EPPlus.4.5.3.2\lib\net40\EPPlus.dll</HintPath>
@@ -131,6 +128,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CustomLocalization\CustomLocalization.csproj">
+      <Project>{5f769066-f82e-4eae-b57b-71bd17ba9a99}</Project>
+      <Name>CustomLocalization</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

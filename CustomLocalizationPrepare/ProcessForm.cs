@@ -31,7 +31,7 @@ namespace CustomLocalizationPrepare {
         LocalizationIndexDirectory child = new LocalizationIndexDirectory();
         child.path = dir;
         child.name = Path.GetFileName(dir);
-        HashSet<string> files = ModDirRecord.fillFiles(child.path);
+        HashSet<string> files = ModDirRecord.fillFiles(child.path, child.name);
         foreach (string file in files) {
           child.files.Add(file, new Dictionary<string, List<string>>());
           ++count;

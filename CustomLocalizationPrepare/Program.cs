@@ -17,6 +17,7 @@ namespace CustormLocalizationPrepare {
     static void Main() {
       Console.WriteLine("Main");
       if (File.Exists("Assembly-CSharp.dll")) {
+        Console.WriteLine("Exists");
         string[] arguments = Environment.GetCommandLineArgs();
         if (arguments.Length > 1) {
           //CustomTranslation.Core.InitStandalone(arguments[1]);
@@ -59,7 +60,7 @@ namespace CustormLocalizationPrepare {
           ProcessStartInfo psi = new ProcessStartInfo();
           psi.WorkingDirectory = managedPath;
           psi.FileName = exeDstPath;
-          psi.Arguments = "\""+AppDomain.CurrentDomain.BaseDirectory;
+          psi.Arguments = "\"" + AppDomain.CurrentDomain.BaseDirectory;
           Console.WriteLine("Starting:" + psi.FileName);
           Process p = Process.Start(psi);
           while (p.WaitForExit(100) == false) {

@@ -41,7 +41,7 @@ namespace CustomTranslation {
       try {
         using (FileStream fileStream = new FileStream(FileName, FileMode.Create))
           runtimeTypeModel.Serialize((Stream)fileStream, (object)conversation);
-      } catch (Exception ex) {
+      } catch (Exception) {
         //MessageBox.Show(ex.ToString());
       }
     }
@@ -289,14 +289,16 @@ namespace CustomTranslation {
       }
       return result;
     }
-    public static HashSet<string> fillFiles(string path) {
+    public static HashSet<string> fillFiles(string path, string modName) {
       HashSet<string> files = new HashSet<string>();
       string[] foundfiles = Directory.GetFiles(path, "*.json", SearchOption.TopDirectoryOnly);
       foreach (string filename in foundfiles) {
         string name = Path.GetFileName(filename).ToUpper();
         if (name == Core.LocalizationFileName.ToUpper()) { continue; }
         name = Path.GetFileNameWithoutExtension(filename).ToUpper();
-        if (Core.skipLocalizationProc.Contains(name)) { continue; }
+        if (name.Contains("SETTINGS") && (modName.Contains("Affinity"))) { } else {
+          if (Core.skipLocalizationProc.Contains(name)) { continue; }
+        }
         if (name.StartsWith(Core.LocalizationDefPrefix.ToUpper())
           && name.EndsWith(Core.LocalizationDefSuffix.ToUpper())) { continue; }
         files.Add(Path.GetFileName(filename));
@@ -308,7 +310,7 @@ namespace CustomTranslation {
       return files;
     }
     private void fillFiles() {
-      this.files = fillFiles(this.path);
+      this.files = fillFiles(this.path, this.name);
     }
   }
   public abstract class jtProcGeneric {
@@ -338,8 +340,8 @@ namespace CustomTranslation {
           case LocalizationProcType.Dummy:
             return key;
           case LocalizationProcType.Content: {
-              if (locTable.TryGetValue(Strings.CurrentCulture, out string locVal)) {
-                return locVal;
+              if (locTable.TryGetValue(Core.currentCulture.currentCulture, out string locVal)) {
+                return string.IsNullOrEmpty(locVal)?value:locVal;
               } else {
                 return value;
               }
@@ -531,6 +533,15 @@ namespace CustomTranslation {
   }
   public class jtYangsThoughts : jtField {
     protected override string FieldName() { return "YangsThoughts"; }
+  }
+  public class jtOptionName : jtField {
+    protected override string FieldName() { return "OptionName"; }
+  }
+  public class jtOptionDescription : jtField {
+    protected override string FieldName() { return "OptionDescription"; }
+  }
+  public class jtBioDescription : jtField {
+    protected override string FieldName() { return "BioDescription"; }
   }
   public abstract class jtI1L2K1 : jtProcGenericEx {
     protected virtual string I1 { get { return "EffectData"; } }
@@ -748,12 +759,139 @@ namespace CustomTranslation {
       return result;
     }
   }
+  public abstract class jtI1K1II1L1L2K2 : jtProcGenericEx {
+    protected virtual string I1 { get { return "pilotQuirks"; } }
+    protected virtual string K1 { get { return "tag"; } }
+    protected virtual string II1 { get { return "effectData"; } }
+    protected virtual string L1 { get { return "Description"; } }
+    protected virtual string L2 { get { return "Name"; } }
+    protected virtual string K2 { get { return "Id"; } }
+    protected virtual string keyPrefix { get { return "MechAffinity"; } }
+    public override string Name { get { return keyPrefix + "."+I1 + "." + II1 + "." + L1 + "." + L2; } }
+    public override bool check(string modName, string filename, ref object inc, ref HashSet<string> keys) {
+      JObject json = inc as JObject;
+      if (json == null) { return false; }
+      if (json[I1] == null) { return false; };
+      if (json[I1].Count() == 0) { return false; };
+      int count = json[I1].Count();
+      bool result = false;
+      for (int t = 0; t < count; ++t) {
+        if (json[I1][t][II1] == null) { continue; }
+        int count2 = json[I1][t][II1].Count();
+        for (int tt = 0; tt < count2; ++tt) {
+          if (json[I1][t][II1][tt][L1] == null) { continue; }
+          string value = (string)json[I1][t][II1][tt][L1][L2];
+          if (string.IsNullOrEmpty(value)) { continue; };
+          if (isInVanilla(value)) { continue; }
+          MatchCollection matches = CustomTranslation.Core.locRegEx.Matches(value);
+          if (matches.Count != 0) { continue; };
+          string key = string.IsNullOrEmpty(keyPrefix)?filename:keyPrefix + "." + json[I1][t][K1] + "." + II1 + "." + json[I1][t][II1][tt][L1][K2] + tt + "." + L2;
+          keys.Add(key);
+          result = true;
+        }
+      }
+      return result;
+    }
+    public override bool reverse(ref object inc) {
+      JObject json = inc as JObject;
+      if (json == null) { return false; }
+      if (json[I1] == null) { return false; };
+      if (json[I1].Count() == 0) { return false; };
+      int count = json[I1].Count();
+      bool result = false;
+      for (int t = 0; t < count; ++t) {
+        if (json[I1][t][II1] == null) { continue; }
+        int count2 = json[I1][t][II1].Count();
+        for (int tt = 0; tt < count2; ++tt) {
+          if (json[I1][t][II1][tt][L1] == null) { continue; }
+          string value = (string)json[I1][t][II1][tt][L1][L2];
+          if (string.IsNullOrEmpty(value)) { continue; };
+          if ((value.Contains(Core.LocalizationRefPrefix) == false) && (value.Contains(Core.LocalizationRefSufix) == false)) { continue; }
+          result = false;
+          Text_Append.Localize(ref value, Strings.Culture.CULTURE_EN_US);
+          json[I1][t][II1][tt][L1][L2] = value;
+        }
+      }
+      inc = json;
+      return result;
+    }
+    public override bool proc(string modName, string filename, ref object inc) {
+      JObject json = inc as JObject;
+      if (json == null) { return false; }
+      if (json[I1] == null) { return false; };
+      if (json[I1].Count() == 0) { return false; };
+      int count = json[I1].Count();
+      bool result = false;
+      for (int t = 0; t < count; ++t) {
+        if (json[I1][t][II1] == null) { continue; }
+        int count2 = json[I1][t][II1].Count();
+        for (int tt = 0; tt < count2; ++tt) {
+          if (json[I1][t][II1][tt][L1] == null) { continue; }
+          string value = (string)json[I1][t][II1][tt][L1][L2];
+          if (string.IsNullOrEmpty(value)) { continue; };
+          if (isInVanilla(value)) { continue; }
+          MatchCollection matches = CustomTranslation.Core.locRegEx.Matches(value);
+          if (matches.Count != 0) { continue; };
+          string key = string.IsNullOrEmpty(keyPrefix) ? filename : keyPrefix + "." + json[I1][t][K1] + "." + II1 + "." + json[I1][t][II1][tt][L1][K2] + tt + "." + L2;
+          key = key.ToUpper();
+          if (Core.stringsTable.ContainsKey(key) == true) {
+            json[I1][t][II1][tt][L1][L2] = this.getValue(key, value);//CustomTranslation.Core.LocalizationRefPrefix + key + CustomTranslation.Core.LocalizationRefSufix;
+            result = true;
+          }
+        }
+      }
+      return result;
+    }
+    public override bool extract(string modName, string filename, ref object inc, Dictionary<string, string> replace) {
+      JObject json = inc as JObject;
+      if (json == null) { return false; }
+      if (json[I1] == null) { return false; };
+      if (json[I1].Count() == 0) { return false; };
+      int count = json[I1].Count();
+      bool result = false;
+      for (int t = 0; t < count; ++t) {
+        if (json[I1][t][II1] == null) { continue; }
+        int count2 = json[I1][t][II1].Count();
+        for (int tt = 0; tt < count2; ++tt) {
+          if (json[I1][t][II1][tt][L1] == null) { continue; }
+          string value = (string)json[I1][t][II1][tt][L1][L2];
+          if (string.IsNullOrEmpty(value)) { continue; };
+          if (isInVanilla(value)) { continue; }
+          MatchCollection matches = CustomTranslation.Core.locRegEx.Matches(value);
+          if (matches.Count != 0) { continue; };
+          string key = string.IsNullOrEmpty(keyPrefix) ? filename : keyPrefix + "." + json[I1][t][K1] + "." + II1 + "." + json[I1][t][II1][tt][L1][K2] + tt + "." + L2;
+          //if (Core.stringsTable.ContainsKey(key.ToUpper()) == false) { continue; }
+          replace.Add(key, value);
+          result = true;
+        }
+      }
+      return result;
+    }
+  }
   public class jtModeStatusEffectsName : jtI1II1L2K1 {
     protected override string I1 { get { return "Modes"; } }
     protected override string II1 { get { return "statusEffects"; } }
     protected override string L1 { get { return "Description"; } }
     protected override string L2 { get { return "Name"; } }
     protected override string K1 { get { return "Id"; } }
+  }
+  public class jtpilotQuirksStatusEffectsName : jtI1K1II1L1L2K2 {
+    protected override string I1 { get { return "pilotQuirks"; } }
+    protected override string K1 { get { return "tag"; } }
+    protected override string II1 { get { return "effectData"; } }
+    protected override string L1 { get { return "Description"; } }
+    protected override string L2 { get { return "Name"; } }
+    protected override string K2 { get { return "Id"; } }
+    protected override string keyPrefix { get { return "MechAffinity"; } }
+  }
+  public class jtpilotQuirksStatusEffectsDetails : jtI1K1II1L1L2K2 {
+    protected override string I1 { get { return "pilotQuirks"; } }
+    protected override string K1 { get { return "tag"; } }
+    protected override string II1 { get { return "effectData"; } }
+    protected override string L1 { get { return "Description"; } }
+    protected override string L2 { get { return "Details"; } }
+    protected override string K2 { get { return "Id"; } }
+    protected override string keyPrefix { get { return "MechAffinity"; } }
   }
   public class jtModeStatusEffectsDetails : jtI1II1L2K1 {
     protected override string I1 { get { return "Modes"; } }
@@ -1114,6 +1252,7 @@ namespace CustomTranslation {
       return result;
     }
     public override bool extract(string modName, string filename, ref object inc, Dictionary<string, string> replace) {
+      //Log.M.TWL(0, "extract:"+modName+":"+filename+":"+I1+"."+L1+" key:"+K1);
       JObject json = inc as JObject;
       if (json == null) { return false; }
       if (json[I1] == null) { return false; };
@@ -1323,6 +1462,18 @@ namespace CustomTranslation {
   public class jtobjectiveList_title : jtI1L1 {
     protected override string I1 { get { return "objectiveList"; } }
     protected override string L1 { get { return "title"; } }
+  }
+  public class jtpilotQuirks_description : jtI1L1K1 {
+    protected override string I1 { get { return "pilotQuirks"; } }
+    protected override string L1 { get { return "description"; } }
+    protected override string K1 { get { return "tag"; } }
+    protected override string keyPrefix { get { return "MechAffinity"; } }
+  }
+  public class jtpilotQuirks_quirkName : jtI1L1K1 {
+    protected override string I1 { get { return "pilotQuirks"; } }
+    protected override string L1 { get { return "quirkName"; } }
+    protected override string K1 { get { return "tag"; } }
+    protected override string keyPrefix { get { return "MechAffinity"; } }
   }
   public class jtobjectiveList_description : jtI1L1 {
     protected override string I1 { get { return "objectiveList"; } }

@@ -5,6 +5,7 @@ using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
 using Harmony;
 using HBS;
+using HBS.Util;
 using Localize;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -21,11 +22,12 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using TMPro;
 using UnityEngine;
+using static BattleTech.Data.DataManager;
 
 namespace CustomTranslation {
   public class DebugLogFile {
     private string m_logfile;
-    private  Mutex mutex = new Mutex();
+    private SpinLock spinLock = new SpinLock();
     private StringBuilder m_cache = new StringBuilder();
     private StreamWriter m_fs = null;
     public DebugLogFile(string filename) {
@@ -34,12 +36,15 @@ namespace CustomTranslation {
       this.m_fs = new StreamWriter(this.m_logfile);
       this.m_fs.AutoFlush = true;
     }
-    public void flush() {
-      if (this.mutex.WaitOne(1000)) {
+    public void flush() {      
+      bool locked = false;
+      try {
+      if (spinLock.IsHeldByCurrentThread == false) { spinLock.Enter(ref locked); }
         this.m_fs.Write(this.m_cache.ToString());
         this.m_fs.Flush();
-        this.m_cache.Length = 0;
-        this.mutex.ReleaseMutex();
+        this.m_cache.Length = 0;          
+      } finally {
+        if (locked) { spinLock.Exit(); }
       }
     }
     public void W(string line, bool isCritical = false) {
@@ -78,20 +83,25 @@ namespace CustomTranslation {
       }
     }
     public void LogWrite(string line, bool isCritical = false) {
-      if ((Core.Settings.debugLog) || (isCritical)) {
-        if (this.mutex.WaitOne(1000)) {
-          m_cache.Append(line);
-          this.mutex.ReleaseMutex();
-        }
+      bool locked = false;
+      try {
+        if (spinLock.IsHeldByCurrentThread == false) { spinLock.Enter(ref locked); }
+        m_cache.Append(line);
         if (isCritical) { this.flush(); };
         if (m_logfile.Length > Log.flushBufferLength) { this.flush(); };
+      } finally {
+        if(locked)spinLock.Exit();
       }
     }
 
   }
   public static class Log {
     //private static string m_assemblyFile;
-    public static DebugLogFile M = null;
+    private static DebugLogFile LogFile = null;
+    private static DebugLogFile InterpolationReport = null;
+    public static DebugLogFile M { get { return Core.Settings.debugLog ? LogFile : null; } }
+    public static DebugLogFile Er { get { return LogFile; } }
+    public static DebugLogFile I { get { return InterpolationReport; } }
     public static string BaseDirectory;
     public static readonly int flushBufferLength = 16 * 1024;
     public static bool flushThreadActive = true;
@@ -103,13 +113,16 @@ namespace CustomTranslation {
         //if (Core.translationSaver == null) {
         //  Core.translationSaver = UnityGameInstance.Instance.gameObject.AddComponent<TranslationSaver>();
         //}
-        Log.M?.flush();
+        LogFile.flush();
+        InterpolationReport.flush();
       }
     }
     public static void InitLog() {
-      if (Core.Settings.debugLog) {
-        M = new DebugLogFile("CustomLocalization.log");
-      }
+      //if (Core.Settings.debugLog) {
+      LogFile = new DebugLogFile("CustomLocalization.log");
+      InterpolationReport = new DebugLogFile("InterpolationReport.log");
+      //}
+      flushThread.Start();
     }
   }
   [HarmonyPatch(typeof(SG_Stores_MultiPurchasePopup))]
@@ -125,13 +138,64 @@ namespace CustomTranslation {
   [HarmonyPatch("Interpolate")]
   [HarmonyPatch(MethodType.Normal)]
   public static class Interpolator_Interpolate {
-    public static void Prefix(ref string template) {
+    private static Dictionary<GameContextObjectTagEnum, string> enumToDesignerMap = null;
+    private static HashSet<Type> returnTypes = new HashSet<Type>() { typeof(string), typeof(int), typeof(float), typeof(bool) };
+    public static void Prefix(ref string template, GameContext context) {
       try {
         Log.M?.LogWrite("Interpolator.Interpolate " + template + "->");
         Text_Append.Localize(ref template);
         Log.M?.LogWrite(template+"\n");
+        Log.I.TWL(0,"Шаблон:"+template,true);
+        Log.I.WL(1, "Контекст:");
+        if(enumToDesignerMap == null) {
+          Type GameContextEnumTagToDesignerTag = typeof(GameContext).Assembly.GetType("GameContextEnumTagToDesignerTag");
+          enumToDesignerMap = (Dictionary<GameContextObjectTagEnum, string>)GameContextEnumTagToDesignerTag.GetField("enumToDesignerMap", BindingFlags.Static | BindingFlags.Public).GetValue(null);
+        }
+        foreach (var citem in Traverse.Create(context).Field<Dictionary<GameContextObjectTagEnum, object>>("context").Value) {
+          Log.I.WL(2, enumToDesignerMap[citem.Key]+":"+ citem.Value.GetType().ToString());
+          PropertyInfo[] properties = citem.Value.GetType().GetProperties(BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic);
+          foreach(PropertyInfo prop in properties) {
+            if (prop.CanRead == false) { continue; }
+            if (returnTypes.Contains(prop.PropertyType) == false) { continue; }
+            Log.I.WL(3, prop.Name+":"+prop.PropertyType.Name);
+          }
+          FieldInfo[] fields = citem.Value.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+          foreach (FieldInfo field in fields) {
+            if (returnTypes.Contains(field.FieldType) == false) { continue; }
+            Log.I.WL(3, field.Name+":"+field.FieldType.Name);
+          }
+          MethodInfo[] methods = citem.Value.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+          foreach(MethodInfo method in methods) {
+            if (method.GetParameters().Length > 0) { continue; }
+            if (method.Name.StartsWith("get_")) { continue; }
+            if (method.IsAbstract) { continue; }
+            if (method.IsGenericMethod) { continue; }
+            if (returnTypes.Contains(method.ReturnParameter.ParameterType) == false) { continue; }
+            Log.I.WL(3, method.Name+":"+method.ReturnParameter.ParameterType.Name);
+          }
+        }
       } catch(Exception e) {
-        Log.M?.LogWrite(e.ToString(), true);
+        Log.Er?.LogWrite(e.ToString(), true);
+      }
+    }
+  }
+  [HarmonyPatch(typeof(CSVStringsProvider))]
+  [HarmonyPatch("LoadCultureFromReader")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class CSVStringsProvider_LoadCultureFromReader {
+    public static void Postfix(CSVStringsProvider __instance) {
+      try {
+        Log.M?.TWL(0,"CSVStringsProvider.LoadCultureFromReader " + __instance.CurrentCulture);
+        if (Core.currentCulture.currentCulture != __instance.CurrentCulture) {
+          Core.currentCulture.currentCulture = __instance.CurrentCulture;
+          File.WriteAllText(Core.Settings.cultureSettingsFilePath, JsonConvert.SerializeObject(Core.currentCulture, Formatting.Indented));
+          switch (Core.currentCulture.currentCulture) {
+            case Strings.Culture.CULTURE_RU_RU: GenericPopupBuilder.Create("ПОЖАЛУЙСТА ПЕРЕЗАПУСТИТЕ ПРИЛОЖЕНИЕ", "Вам надо перезапустить приложение, чтобы локализация правильно применилась").AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render(); break;
+            default: GenericPopupBuilder.Create("PLEASE RESTART", "You should restart for localization to take effect").AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render(); break;
+          }
+        }
+      } catch (Exception e) {
+        Log.Er?.LogWrite(e.ToString(), true);
       }
     }
   }
@@ -178,23 +242,24 @@ namespace CustomTranslation {
         HashSet<jtProcGenericEx> procs = path.getLocalizationProcs();
         if (procs == null) { return true; }
         string content = File.ReadAllText(path, Encoding.UTF8);
-        object jcontent = JObject.Parse(content);
-        string filename = Path.GetFileNameWithoutExtension(path);
-        bool updated = false;
-        foreach (jtProcGenericEx proc in procs) {
-          try {
-            Log.M?.WL(1, proc.Name);
-            if (proc.proc(string.Empty, filename, ref jcontent)) { updated = true; }
-          } catch (Exception e) {
-            Log.M?.TWL(0, e.ToString(), true);
-          }
-        }
-        content = (jcontent as JObject).ToString(Formatting.Indented);
-        if (updated) { Log.M?.WL(0, Strings.CurrentCulture.ToString() + ":" + content); }
+        bool updated = Core.LocalizeString(ref content, path, procs);
+        //object jcontent = JObject.Parse(content);
+        //string filename = Path.GetFileNameWithoutExtension(path);
+        //bool updated = false;
+        //foreach (jtProcGenericEx proc in procs) {
+        //  try {
+        //    Log.M?.WL(1, proc.Name);
+        //    if (proc.proc(string.Empty, filename, ref jcontent)) { updated = true; }
+        //  } catch (Exception e) {
+        //    Log.M?.TWL(0, e.ToString(), true);
+        //  }
+        //}
+        //content = (jcontent as JObject).ToString(Formatting.Indented);
+        //if (updated) { Log.M?.WL(0, Core.currentCulture.currentCulture.ToString() + ":" + content); }
         __instance.Init(content.GenStream(),Encoding.UTF8,true,1024,false);
         return false;
       } catch (Exception e) {
-        Log.M?.TWL(0,e.ToString(), true);
+        Log.Er?.TWL(0,e.ToString(), true);
       }
       return true;
     }
@@ -220,43 +285,31 @@ namespace CustomTranslation {
   [HarmonyPatch(new Type[] { typeof(string),typeof(Action<string, Stream>) })]
   [HarmonyPatch(MethodType.Normal)]
   public static class DataLoader_CallHandler {
-    public static HashSet<jtProcGenericEx> getLocalizationProcs(this string path) {
-      string filename = Path.GetFileNameWithoutExtension(path);
-      if (Core.proccessFiles.TryGetValue(filename, out HashSet<jtProcGenericEx> procs)) {
-        Log.M?.WL(1, "found filename:" + filename);
-        return procs;
-      }
-      string dir = Path.GetDirectoryName(Path.GetFullPath(path));
-      if (Core.proccessDirectories.TryGetValue(dir, out procs)) {
-        Log.M?.WL(1, "found directory:" + dir);
-        return procs;
-      }
-      return null;
-    }
     public static bool Prefix(ref string path, Action<string, Stream> handler) {
       try {
-        if (Path.GetExtension(path).ToUpper() != ".JSON") { return true; }
-        Log.M?.WL(0,"CallHandler:" + path);
+        Log.M?.TWL(0, "CallHandler:" + path+":"+ Path.GetExtension(path).ToUpper());
+        if (Path.GetExtension(path).ToUpper() == ".JSON") { return true; }
         HashSet<jtProcGenericEx> procs = path.getLocalizationProcs();
         if (procs == null) { return true; }
         string content = File.ReadAllText(path, Encoding.UTF8);
-        object jcontent = JObject.Parse(content);
-        string filename = Path.GetFileNameWithoutExtension(path);
-        bool updated = false;
-        foreach (jtProcGenericEx proc in procs) {
-          try {
-            Log.M?.WL(1, proc.Name);
-            if (proc.proc(string.Empty, filename, ref jcontent)) { updated = true; }
-          }catch(Exception e) {
-            Log.M?.TWL(0, e.ToString(), true);
-          }
-        }
-        content = (jcontent as JObject).ToString(Formatting.Indented);
-        if (updated) { Log.M?.WL(0, Strings.CurrentCulture.ToString() + ":" + content); }
+        bool updated = Core.LocalizeString(ref content, path, procs);
+        //object jcontent = JObject.Parse(content);
+        //string filename = Path.GetFileNameWithoutExtension(path);
+        //bool updated = false;
+        //foreach (jtProcGenericEx proc in procs) {
+        //  try {
+        //    Log.M?.WL(1, proc.Name);
+        //    if (proc.proc(string.Empty, filename, ref jcontent)) { updated = true; }
+        //  }catch(Exception e) {
+        //    Log.M?.TWL(0, e.ToString(), true);
+        //  }
+        //}
+        //content = (jcontent as JObject).ToString(Formatting.Indented);
+        //if (updated) { Log.M?.WL(0, Strings.CurrentCulture.ToString() + ":" + content); }
         handler(path,content.GenStream());
         return false;
       } catch (Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Er?.TWL(0, e.ToString(), true);
       }
       return true;
     }
@@ -287,12 +340,59 @@ namespace CustomTranslation {
         }
         Log.M?.LogWrite("\n");
       } catch (Exception e) {
-        Log.M?.LogWrite(e.ToString() + " " + text + "\n", true);
+        Log.Er?.LogWrite(e.ToString() + " " + text + "\n", true);
       }
       return true;
     }
     public static void Postfix(InterpolatedText __instance) {
       //Log.M?.LogWrite(" result:" + __instance + "\n");
+    }
+  }
+  [HarmonyPatch(typeof(ShipModuleUpgrade))]
+  [HarmonyPatch("FromJSON")]
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPriority(Priority.First)]
+  public static class ShipModuleUpgrade_FromJSON {
+    public static void Postfix(ShipModuleUpgrade __instance, string json) {
+      try {
+        Log.M?.TWL(0,"ShipModuleUpgrade.FromJSON "+ __instance.Description.Id);
+        Log.M?.WL(1,Environment.StackTrace);
+      } catch (Exception e) {
+        Log.Er?.LogWrite(e.ToString() + "\n", true);
+      }
+    }
+  }
+  [HarmonyPatch(MethodType.Normal)]
+  [HarmonyPriority(Priority.Last)]
+  public static class StringDataLoadRequest_OnLoadedWithText {
+    public static MethodBase TargetMethod() {
+      return AccessTools.Method(typeof(StringDataLoadRequest<WeaponDef>), "OnLoadedWithText");
+    }
+    public static void Prefix(VersionManifestEntry ___manifestEntry, ref string text) {
+      try {
+        string resourceId = ___manifestEntry.Id;
+        string path = ___manifestEntry.FilePath;
+        string ext = Path.GetExtension(path).ToUpper();
+        Log.M?.TWL(0, "OnLoadedWithText:" + resourceId + ":" + path+":"+ ext);
+        if (ext != ".JSON") { return; }
+        HashSet<jtProcGenericEx> procs = path.getLocalizationProcs();
+        if (procs == null) { return; }
+        bool updated = Core.LocalizeString(ref text, path, procs);
+        //object jcontent = JObject.Parse(text);
+        //bool updated = false;
+        //foreach (jtProcGenericEx proc in procs) {
+        //  try {
+        //    Log.M?.WL(1, proc.Name);
+        //    if (proc.proc(string.Empty, resourceId, ref jcontent)) { updated = true; }
+        //  } catch (Exception e) {
+        //    Log.M?.TWL(0, e.ToString(), true);
+        //  }
+        //}
+        //text = (jcontent as JObject).ToString(Formatting.Indented);
+        //if (updated) { Log.M?.WL(0, Strings.CurrentCulture.ToString() + ":" + text); }
+      } catch (Exception e) {
+        Log.Er?.LogWrite(e.ToString() + "\n", true);
+      }
     }
   }
   [HarmonyPatch(typeof(MechValidationRules))]
@@ -312,7 +412,7 @@ namespace CustomTranslation {
           }
         }
       } catch (Exception e) {
-        Log.M?.LogWrite(e.ToString() + "\n", true);
+        Log.Er?.LogWrite(e.ToString() + "\n", true);
       }
     }
   }
@@ -328,7 +428,7 @@ namespace CustomTranslation {
           if (__result[index] == null) { __result[index] = new Text("NULL"); }
         }
       }catch(Exception e) {
-        Log.M?.LogWrite(e.ToString()+"\n",true);
+        Log.Er?.LogWrite(e.ToString()+"\n",true);
       }
     }
   }
@@ -436,7 +536,7 @@ namespace CustomTranslation {
           }
         };
       }catch(Exception e) {
-        Log.M?.TWL(0, e.ToString(), true);
+        Log.Er?.TWL(0, e.ToString(), true);
       }
     }
   }
@@ -446,6 +546,41 @@ namespace CustomTranslation {
   public static class MainMenu_Init {
     public static void Postfix(MainMenu __instance) {
       Core.SubscribeOnLanguageChanged();
+      try {
+        Log.M?.TWL(0, "MainMenu.Init " + Strings.CurrentCulture);
+        if (Core.currentCulture.currentCulture != Strings.CurrentCulture) {
+          Core.currentCulture.currentCulture = Strings.CurrentCulture;
+          Core.CallResetCacheActions();
+          File.WriteAllText(Core.Settings.cultureSettingsFilePath, JsonConvert.SerializeObject(Core.currentCulture, Formatting.Indented));
+          switch (Core.currentCulture.currentCulture) {
+            case Strings.Culture.CULTURE_RU_RU: GenericPopupBuilder.Create("ПОЖАЛУЙСТА ПЕРЕЗАПУСТИТЕ ПРИЛОЖЕНИЕ", "Вам надо перезапустить приложение, что бы локализация правильно применилась").AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render(); break;
+            default: GenericPopupBuilder.Create("PLEASE RESTART", "You should restart for localization to take effect").AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render(); break;
+          }
+        }
+      } catch (Exception e) {
+        Log.Er?.TWL(0, e.ToString());
+      }
+    }
+  }
+  [HarmonyPatch(typeof(LanguageSelect))]
+  [HarmonyPatch("Save")]
+  [HarmonyPatch(MethodType.Normal)]
+  public static class LanguageSelect_Save {
+    public static void Postfix(LanguageSelect __instance) {
+      try {
+        Log.M?.TWL(0, "LanguageSelect.Save " + Strings.CurrentCulture);
+        if (Core.currentCulture.currentCulture != Strings.CurrentCulture) {
+          Core.currentCulture.currentCulture = Strings.CurrentCulture;
+          Core.CallResetCacheActions();
+          File.WriteAllText(Core.Settings.cultureSettingsFilePath, JsonConvert.SerializeObject(Core.currentCulture, Formatting.Indented));
+          switch (Core.currentCulture.currentCulture) {
+            case Strings.Culture.CULTURE_RU_RU: GenericPopupBuilder.Create("ПОЖАЛУЙСТА ПЕРЕЗАПУСТИТЕ ПРИЛОЖЕНИЕ", "Вам надо перезапустить приложение, что бы локализация правильно применилась").AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render(); break;
+            default: GenericPopupBuilder.Create("PLEASE RESTART", "You should restart for localization to take effect").AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render(); break;
+          }
+        }
+      } catch (Exception e) {
+        Log.Er?.TWL(0, e.ToString());
+      }
     }
   }
   [HarmonyPatch(typeof(Localize.Text))]
@@ -524,7 +659,7 @@ namespace CustomTranslation {
         }
         Log.M?.LogWrite("\n");
       } catch (Exception e) {
-        Log.M?.LogWrite(e.ToString() + " " + text + "\n",true);
+        Log.Er?.LogWrite(e.ToString() + " " + text + "\n",true);
       }
       return true;
     }
@@ -581,18 +716,22 @@ namespace CustomTranslation {
     }
   }
   public enum LocalizationProcType {
-    Dummy,Key,Content
+    Dummy,Key,Content,None
   }
   public class CTSettings {
+    [JsonIgnore]
+    public string cultureSettingsFilePath;
     public bool debugLog { get; set; }
     public List<MetaEvaluator> metaEvaluators { get; set; }
     public LocalizationProcType localizationProcType { get; set; }
+    public Strings.Culture defaultCulture { get; set; }
     public Dictionary<Strings.Culture, Dictionary<string, string>> fontsReplacementTable { get; set; }
     public CTSettings() {
       debugLog = false;
       metaEvaluators = new List<MetaEvaluator>();
       localizationProcType = LocalizationProcType.Dummy;
       fontsReplacementTable = new Dictionary<Strings.Culture, Dictionary<string, string>>();
+      defaultCulture = Strings.Culture.CULTURE_EN_US;
     }
     public HashSet<MetaEvaluator> listEvaluators(string key) {
       HashSet<MetaEvaluator> result = new HashSet<MetaEvaluator>();
@@ -604,8 +743,16 @@ namespace CustomTranslation {
   }
   public class COnLanguageChanged { 
   }
+  public class CLCultureSettings {
+    public Strings.Culture currentCulture { get; set; }
+    public CLCultureSettings() {
+      currentCulture = Strings.Culture.CULTURE_EN_US;
+    }
+  }
   public static class Core {
+    private static HashSet<Action> resetCacheActions = new HashSet<Action>();
     public static CTSettings Settings;
+    public static CLCultureSettings currentCulture = new CLCultureSettings();
     public static readonly string LocalizationFileName = "Localization.json";
     public static readonly string LocalizationDefPrefix = "Localization";
     public static readonly string LocalizationDefSuffix = "Def";
@@ -629,6 +776,44 @@ namespace CustomTranslation {
       } while (string.IsNullOrEmpty(filename) == false);
       result.Reverse();
       return result;
+    }
+    public static HashSet<jtProcGenericEx> getLocalizationProcs(this string path) {
+      if (Core.currentCulture.currentCulture == Core.Settings.defaultCulture) { return null; }
+      string filename = Path.GetFileNameWithoutExtension(path);
+      if (Core.proccessFiles.TryGetValue(filename, out HashSet<jtProcGenericEx> procs)) {
+        Log.M?.WL(1, "found filename:" + filename);
+        return procs;
+      }
+      string dir = Path.GetDirectoryName(Path.GetFullPath(path));
+      if (Core.proccessDirectories.TryGetValue(dir, out procs)) {
+        Log.M?.WL(1, "found directory:" + dir);
+        return procs;
+      }
+      return null;
+    }
+    public static void CallResetCacheActions() {
+      foreach (Action act in resetCacheActions) { act(); }
+    }
+    public static void RegisterResetCache(Action action) {
+      resetCacheActions.Add(action);
+    }
+    public static bool LocalizeString(ref string content, string path, HashSet<jtProcGenericEx> procs) {
+      if (Core.currentCulture.currentCulture == Core.Settings.defaultCulture) { return false; }
+      if (procs == null) { return false; }
+      object jcontent = JObject.Parse(content);
+      string filename = Path.GetFileNameWithoutExtension(path);
+      bool updated = false;
+      foreach (jtProcGenericEx proc in procs) {
+        try {
+          Log.M?.WL(1, proc.Name);
+          if (proc.proc(string.Empty, filename, ref jcontent)) { updated = true; }
+        } catch (Exception e) {
+          Log.Er?.TWL(0, e.ToString(), true);
+        }
+      }
+      content = (jcontent as JObject).ToString(Formatting.Indented);
+      if (updated) { Log.M?.WL(0, Core.currentCulture.currentCulture.ToString() + ":" + content); }
+      return updated;
     }
     public static void InitStructure() {
       foreach (Type locMethod in typeof(Core).Assembly.GetTypes()) {
@@ -697,7 +882,7 @@ namespace CustomTranslation {
             AddTranslationRecord(bloc);
           }
         } catch (Exception e) {
-          Log.M?.LogWrite(locfile + " exception " + e.ToString() + "\n");
+          Log.Er?.LogWrite(locfile + " exception " + e.ToString() + "\n");
         }
       }
       foreach (string d in Directory.GetDirectories(directory)) {
@@ -755,8 +940,8 @@ namespace CustomTranslation {
           ProcessLocalizationDefinition(def);
           //Strings.Culture defCulture = def.culture;
         } catch(Exception e) {
-          Log.M?.TWL(0, locDef, true);
-          Log.M?.TWL(0, e.ToString(),true);
+          Log.Er?.TWL(0, locDef, true);
+          Log.Er?.TWL(0, e.ToString(),true);
         }
       }
       foreach(var procFile in Core.proccessFiles) {
@@ -813,10 +998,10 @@ namespace CustomTranslation {
       CurRootDirectory = directory;
       ModsRootDirectory = Path.GetDirectoryName(directory);
       Log.BaseDirectory = directory;
-      Log.InitLog();
       //settingsJson.get
       Core.Settings = new CTSettings();
       Core.Settings.debugLog = true;
+      Log.InitLog();
       Log.M?.LogWrite("Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + "\n", true);
       InitStructure();
       Core.GatherLocalizations(ModsRootDirectory);
@@ -825,14 +1010,23 @@ namespace CustomTranslation {
 
     public static void Init(string directory, string settingsJson) {
       Log.BaseDirectory = directory;
+      
       //settingsJson.get
       Core.Settings = JsonConvert.DeserializeObject<CustomTranslation.CTSettings>(settingsJson);
+      Core.Settings.cultureSettingsFilePath = Path.Combine(directory, "..", "..", "cultureSettings.json");
+      if (File.Exists(Core.Settings.cultureSettingsFilePath)) {
+        Core.currentCulture = JsonConvert.DeserializeObject<CLCultureSettings>(File.ReadAllText(Core.Settings.cultureSettingsFilePath));
+      } else {
+        Core.currentCulture = new CLCultureSettings();
+        File.WriteAllText(Core.Settings.cultureSettingsFilePath, JsonConvert.SerializeObject(Core.currentCulture,Formatting.Indented));
+      }
       Log.InitLog();
-      Log.M?.TWL(0,"Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + "\n", true);
-      Log.M?.WL(1, "localizationProcType:" + Core.Settings.localizationProcType);
+      Log.Er?.TWL(0,"Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version, true);
+      Log.Er?.WL(1, "localizationProcType:" + Core.Settings.localizationProcType);
+      Log.Er?.WL(1, "CurrentCulture:" + Core.currentCulture.currentCulture+"/"+Strings.CurrentCulture);
       InitStructure();
       try {
-        Log.M?.TWL(0, "loading assets:" + Path.Combine(directory, "assets"));
+        Log.Er?.TWL(0, "loading assets:" + Path.Combine(directory, "assets"));
         string[] fontsAssets = Directory.GetFiles(Path.Combine(directory, "assets"));
         foreach (string path in fontsAssets) {
           var assetBundle = AssetBundle.LoadFromFile(path);
@@ -852,16 +1046,18 @@ namespace CustomTranslation {
             Log.M?.WL(1, "asset " + path + ":" + "fail to load");
           }
         }
-        Core.GatherLocalizations(Path.GetDirectoryName(directory));
-        Core.GatherLocalizationDefs(Path.GetDirectoryName(directory));
-        var harmony = HarmonyInstance.Create("io.mission.customlocalization");
-        harmony.PatchAll(Assembly.GetExecutingAssembly());
+        if (Core.Settings.localizationProcType != LocalizationProcType.None) {
+          Core.GatherLocalizations(Path.GetDirectoryName(directory));
+          Core.GatherLocalizationDefs(Path.GetDirectoryName(directory));
+          var harmony = HarmonyInstance.Create("io.mission.customlocalization");
+          harmony.PatchAll(Assembly.GetExecutingAssembly());
+        }
         //LazySingletonBehavior<UnityGameInstance>.Instance.Game.MessageCenter.AddSubscriber(MessageCenterMessageType.OnLanguageChanged, new ReceiveMessageCenterMessage(Core.OnLanguageChanged));
         //translationSaver = new GameObject();
         //translationSaver.AddComponent<TranslationSaver>();
         //translationSaver.SetActive(true);
       } catch (Exception e) {
-        Log.M?.LogWrite(e.ToString() + "\n");
+        Log.Er?.LogWrite(e.ToString() + "\n");
       }
     }
   }

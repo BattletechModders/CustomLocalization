@@ -530,7 +530,7 @@ namespace CustormLocalizationPrepare {
               var locRec = locFile.content[locRecIndex];
               if (string.IsNullOrEmpty(Localization)) { worksheet.Cells[index, 3].Value = locRec.Localization[locLang]; }
               if (string.IsNullOrEmpty(Commentary)) { worksheet.Cells[index, 4].Value = locRec.Commentary; }
-              if (Original != locRec.Original) {
+              if (IsSanitizedEqual(Original,locRec.Original) == false) {
                 worksheet.Cells[index, 2].Value = locRec.Original;
                 worksheet.Row(index).Style.Fill.PatternType = ExcelFillStyle.Solid;
                 worksheet.Row(index).Style.Fill.BackgroundColor.SetColor(ColorTranslator.FromHtml("#FF0000"));
@@ -544,8 +544,8 @@ namespace CustormLocalizationPrepare {
         foreach (var locRecIndex in jsonNewContent) {
           var locRec = locFile.content[locRecIndex];
           worksheet.Cells[index, 1].Value = locRec.Name;
-          worksheet.Cells[index, 2].Value = locRec.Original;
-          worksheet.Cells[index, 3].Value = locRec.Localization[locLang];
+          worksheet.Cells[index, 2].Value = UnixCR(locRec.Original);
+          worksheet.Cells[index, 3].Value = UnixCR(locRec.Localization[locLang]);
           worksheet.Cells[index, 4].Value = locRec.Commentary;
           ++index;
         };
@@ -556,7 +556,15 @@ namespace CustormLocalizationPrepare {
         package.SaveAs(output);
       }
     }
-
+    public static string sanitizestring(string a) {
+      return a.Replace("  ", " ").Replace("\r\n","\n");
+    }
+    public static bool IsSanitizedEqual(string a, string b) {
+      return sanitizestring(a) == sanitizestring(b);
+    }
+    public static string UnixCR(string a) {
+      return a.Replace("\r\n", "\n");
+    }
     private void btnFromExcel_Click(object sender, EventArgs e) {
       if (OpenXLSXDialog.ShowDialog() == DialogResult.OK) {
         //MessageBox.Show(OpenXLSXDialog.FileName + ":" + package.Workbook.Worksheets.Count);
@@ -595,7 +603,7 @@ namespace CustormLocalizationPrepare {
           string textColor = "#" + (worksheet.Cells[index, 1].Style.Font.Color.Rgb != null?worksheet.Cells[index, 1].Style.Font.Color.Rgb.Substring(2):"000000");
           string backColor = "#" + (worksheet.Cells[index, 1].Style.Fill.BackgroundColor.Rgb != null?worksheet.Cells[index, 1].Style.Fill.BackgroundColor.Rgb.Substring(2):"FFFFFF");
           if(locDict.TryGetValue(Name,out LocalizationRecordDef locRec)) {
-            if (locRec.original != Original) {
+            if (IsSanitizedEqual(locRec.original,Original) == false) {
               if (Original.Contains("\n---\n")) { 
                 locRec.prevOriginal = Original.Substring(0,Original.IndexOf("\n---\n"));
               } else {

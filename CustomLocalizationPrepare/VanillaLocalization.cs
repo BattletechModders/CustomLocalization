@@ -148,7 +148,7 @@ namespace BTLocalization {
             resultBuilder.Append(localize ? Strings.T(this.text) : this.text);
           else
             resultBuilder.Append(localize ? Strings.T(this.text, this.args) : string.Format(this.text, this.args));
-        } catch (FormatException ex) {
+        } catch (FormatException) {
           if (!this.text.Contains("{"))
             return;
         }
@@ -257,7 +257,7 @@ namespace BTLocalization {
               } else
                 dictionary.Add(index, str2);
             }
-          } catch (Exception ex) {
+          } catch (Exception) {
           }
         } else {
           StringBuilder stringBuilder = new StringBuilder();
@@ -560,7 +560,7 @@ namespace BTLocalization {
       Localize.Strings.Culture culture = Localize.Strings.Culture.CULTURE_EN_US;
       try {
         culture = (Localize.Strings.Culture)Enum.Parse(typeof(Localize.Strings.Culture), str);
-      } catch (Exception ex) {
+      } catch (Exception) {
       }
       return culture;
     }
@@ -893,7 +893,7 @@ namespace BTLocalization {
             this.SupportedCultures.Add(culture);
           this.LoadCultureAndThen(culture, (Action<T>)null);
           return culture;
-        } catch (Exception ex) {
+        } catch (Exception) {
         }
       }
       return Localize.Strings.Culture.UNDEFINED;
@@ -927,7 +927,7 @@ namespace BTLocalization {
       try {
         string format = this.EscapeNonStringFormatCurlies(text);
         return key == null || format == null ? "" : string.Format(format, args);
-      } catch (FormatException ex) {
+      } catch (FormatException) {
         return "";
       }
     }
