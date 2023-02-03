@@ -24,10 +24,10 @@ using System.Globalization;
 using CSVFile;
 
 namespace CustormLocalizationPrepare {
-  public partial class MainForm : Form {
+  public partial class MainFormOld : Form {
     public Dictionary<string, string> translationCache;
     public string translationCache_filename;
-    public MainForm() {
+    public MainFormOld() {
       this.translationCache = new Dictionary<string, string>();
       //Core.Settings = new CTSettings();
       //Core.Settings.debugLog = true;
@@ -590,9 +590,9 @@ namespace CustormLocalizationPrepare {
         }
         int index = 1;
         HashSet<string> affected = new HashSet<string>();
-        foreach(string fn in locFile.files) {
-          affected.Add(fn);
-        }
+        //foreach(string fn in locFile.files) {
+        //  affected.Add(fn);
+        //}
         while (worksheet.Cells[index, 1].Value != null) {
           //nTr.FileName = OpenXLSXDialog.FileName;
           string Name = worksheet.Cells[index, 1].Value as string;
@@ -659,7 +659,7 @@ namespace CustormLocalizationPrepare {
           }
           ++index;
         };
-        locFile.files = affected.ToList();
+        //locFile.files = affected.ToList();
         Core.ProcessLocalizationDefinition(locFile);
         LocalizationLoader.saveCSV(locFile, true);
         File.WriteAllText(locFile.filename, JsonConvert.SerializeObject(locFile, Formatting.Indented));
@@ -740,8 +740,8 @@ namespace CustormLocalizationPrepare {
     }
     public void process() {
       if (jtProc == null) { return; }
-      string modName = MainForm.Normilize(mod.name);
-      string filename = MainForm.Normilize(Path.GetFileNameWithoutExtension(jsonPath));
+      string modName = MainFormOld.Normilize(mod.name);
+      string filename = MainFormOld.Normilize(Path.GetFileNameWithoutExtension(jsonPath));
       Dictionary<string, string> replaced = new Dictionary<string, string>();
       jtProc.proc(modName, filename, ref content, replaced, false, new Func<string, bool>(isInVanilla));
       if (ConvFileHelper.isReverse) { updated = true; }
@@ -755,7 +755,7 @@ namespace CustormLocalizationPrepare {
           //nTr.Localization.Add(Localize.Strings.Culture.CULTURE_EN_US, replacements.Value);
           foreach (Localize.Strings.Culture locLang in cultures) {
             string val = replacements.Value;
-            string nval = MainForm.Normilize(val);
+            string nval = MainFormOld.Normilize(val);
             if ((locLang == Localize.Strings.Culture.CULTURE_RU_RU) && (PrepareSettings.UseGoogleTranslate)) {
               if (val.Length > 30) {
                 if (locCache.ContainsKey(nval) == false) {
@@ -819,7 +819,7 @@ namespace CustormLocalizationPrepare {
                   }
                 }
                 string val = original;
-                string nval = MainForm.Normilize(val);
+                string nval = MainFormOld.Normilize(val);
                 //statistics.Add(val);
                 if ((locLang == Localize.Strings.Culture.CULTURE_RU_RU) && (PrepareSettings.UseGoogleTranslate)) {
                   if (val.Length > 30) {
@@ -993,20 +993,20 @@ namespace CustormLocalizationPrepare {
         }
         procs.processors.Add(locRec.processor);
       }
-      foreach (TargetDef trgDef in def.directories) {
-        LocalizationIndexDirectory index = trgDef.findIndex();
-        if (index == null) { continue; }
-        foreach(var file in index.files) {
-          string filepath = Path.Combine(index.path, file.Key);
-          if (affectedFiles.TryGetValue(filepath, out var procs) == false) {
-            procs = new updateTaskInfo(index);
-            affectedFiles.Add(filepath, procs);
-          }
-          foreach(string proc in trgDef.processors) {
-            procs.processors.Add(proc);
-          }
-        }
-      }
+      //foreach (TargetDef trgDef in def.directories) {
+      //  LocalizationIndexDirectory index = trgDef.findIndex();
+      //  if (index == null) { continue; }
+      //  foreach(var file in index.files) {
+      //    string filepath = Path.Combine(index.path, file.Key);
+      //    if (affectedFiles.TryGetValue(filepath, out var procs) == false) {
+      //      procs = new updateTaskInfo(index);
+      //      affectedFiles.Add(filepath, procs);
+      //    }
+      //    foreach(string proc in trgDef.processors) {
+      //      procs.processors.Add(proc);
+      //    }
+      //  }
+      //}
       foreach (var file in affectedFiles) {
         List<jtProcGenericEx> procs = new List<jtProcGenericEx>();
         foreach(var proc in file.Value.processors) {

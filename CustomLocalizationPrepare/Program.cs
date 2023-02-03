@@ -8,73 +8,73 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 //using CustomTranslation; 
 
-namespace CustormLocalizationPrepare {
-  static class Program {
-    /// <summary>           
-    /// The main entry point for the application.                                                          
-    /// </summary>
+namespace CustomLocalizationPrepare {
+  public static class Program {
+    public static string GameRootFolder { get; set; }
+    public static string ManagedFolder { get; set; }
+    public static string ModsFolder { get; set; }
+    private static Dictionary<string, string> assemblies = new Dictionary<string, string>();
+    private static Assembly ResolveAssembly(System.Object sender, ResolveEventArgs evt) {
+      Assembly res = null;
+      try {
+        AssemblyName assemblyName = new AssemblyName(evt.Name);
+        Console.WriteLine($"request resolve assembly:{assemblyName.Name}");
+        if (assemblies.TryGetValue(assemblyName.Name, out string path)) {
+          res = Assembly.LoadFile(path);
+        }
+      } catch (Exception err) {
+        Console.WriteLine(err.ToString());
+      }
+      return res;
+    }
+    public static string AssemblyDirectory {
+      get {
+        string codeBase = Assembly.GetExecutingAssembly().CodeBase;
+        UriBuilder uri = new UriBuilder(codeBase);
+        string path = Uri.UnescapeDataString(uri.Path);
+        return Path.GetDirectoryName(path);
+      }
+    }
+    private static void GatherFolders() {
+      string path = AssemblyDirectory;
+      while (string.IsNullOrEmpty(path) == false) {
+        Console.WriteLine(path);
+        if (File.Exists(Path.Combine(path, "BattleTech.exe"))) {
+          GameRootFolder = path;
+          ManagedFolder = Path.Combine(path, "BattleTech_Data", "Managed");
+          ModsFolder = Path.Combine(path, "Mods");
+          return;
+        }
+        path = Path.GetDirectoryName(path);
+      }
+      GameRootFolder = string.Empty;
+    }
     [STAThread]
     static void Main() {
-      Console.WriteLine("Main");
-      if (File.Exists("Assembly-CSharp.dll")) {
-        Console.WriteLine("Exists");
-        string[] arguments = Environment.GetCommandLineArgs();
-        if (arguments.Length > 1) {
-          //CustomTranslation.Core.InitStandalone(arguments[1]);
-          Application.EnableVisualStyles();
-          Application.SetCompatibleTextRenderingDefault(false);
-
-          Application.Run(new CustomLocalizationPrepare.LangSelectForm());
-        }
-      } else {
-        Console.WriteLine("Not exists: ");
-        string managedPath = AppDomain.CurrentDomain.BaseDirectory;
-        managedPath = Path.Combine(managedPath, "..");
-        managedPath = Path.Combine(managedPath, "..");
-        managedPath = Path.Combine(managedPath, "BattleTech_Data");
-        managedPath = Path.Combine(managedPath, "Managed");
-        string exeDstPath = Path.Combine(managedPath, Path.GetFileName(Application.ExecutablePath));
-        string dllDstPath = Path.Combine(managedPath, "CustomLocalization.dll");
-        string dll2DstPath = Path.Combine(managedPath, "EPPlus.dll");
-        string exeSrcPath = Application.ExecutablePath;
-        string dllSrcPath = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "CustomLocalization.dll");
-        string dll2SrcPath = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "EPPlus.dll");
-        string logDstPath = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "CustomTranslationApplication.log");
-        string logSrcPath = Path.Combine(managedPath, "CustomTranslation.log");
+      GatherFolders();
+      if (string.IsNullOrEmpty(GameRootFolder)) {
+        MessageBox.Show("Не могу найти исполняемый файл игры");
+        return;
+      }
+      foreach(var path in Directory.GetFiles(ManagedFolder, "*.dll", SearchOption.AllDirectories)) {
         try {
-          Console.WriteLine("Copy:");
-          Console.WriteLine("From:" + exeSrcPath);
-          Console.WriteLine("To:" + exeDstPath);
-          File.Copy(exeSrcPath, exeDstPath, true);
-          Console.WriteLine("success");
-          Console.WriteLine("Copy:");
-          Console.WriteLine("From:" + dllSrcPath);
-          Console.WriteLine("To:" + dllDstPath);
-          File.Copy(dllSrcPath, dllDstPath, true);
-          Console.WriteLine("success");
-          Console.WriteLine("Copy:");
-          Console.WriteLine("From:" + dll2SrcPath);
-          Console.WriteLine("To:" + dllDstPath);
-          File.Copy(dll2SrcPath, dll2DstPath, true);
-          Console.WriteLine("success");
-          ProcessStartInfo psi = new ProcessStartInfo();
-          psi.WorkingDirectory = managedPath;
-          psi.FileName = exeDstPath;
-          psi.Arguments = "\"" + AppDomain.CurrentDomain.BaseDirectory;
-          Console.WriteLine("Starting:" + psi.FileName);
-          Process p = Process.Start(psi);
-          while (p.WaitForExit(100) == false) {
-            try { File.Copy(logSrcPath, logDstPath, true); } catch (Exception) { }
-          }
-          try { File.Copy(logSrcPath, logDstPath, true); } catch (Exception) { }
-          File.Delete(logSrcPath);
-          File.Delete(exeDstPath);
-          File.Delete(dllDstPath);
-          File.Delete(dll2DstPath);
-        } catch (Exception e) {
-          Console.WriteLine(e.ToString());
+          string name = AssemblyName.GetAssemblyName(path).Name;
+          assemblies[name] = path;
+          Console.WriteLine($"{name}:{path}");
+        } catch (Exception) {
         }
       }
+      foreach (var path in Directory.GetFiles(ModsFolder, "*.dll", SearchOption.AllDirectories)) {
+        try {
+          string name = AssemblyName.GetAssemblyName(path).Name;
+          assemblies[name] = path;
+          Console.WriteLine($"{name}:{path}");
+        } catch (Exception) {
+        }
+      }
+      AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += ResolveAssembly;
+      AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;
+      Application.Run(new CustomLocalizationPrepare.LangSelectForm());
     }
   }
 }

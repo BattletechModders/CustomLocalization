@@ -167,7 +167,7 @@ namespace CustomLocalizationPrepare {
                 if (targets.TryGetValue(prepareRecord.targetKey, out targetDef) == false) {
                   targetDef = new TargetDef();
                   targetDef.dir.AddRange(prepareRecord.targetFileName);
-                  locDef.directories.Add(targetDef);
+                  //locDef.directories.Add(targetDef);
                   targets.Add(prepareRecord.targetKey, targetDef);
                 }
               }
@@ -188,7 +188,7 @@ namespace CustomLocalizationPrepare {
         }
       };
       locDef.content = locDef.content.OrderBy(x => x.id).ToList();
-      locDef.files = affected.ToList();
+      //locDef.files = affected.ToList();
       Log.M?.TWL(0, "result:" + (locDef == null ? "null" : "not null"));
       return locDef;
     }

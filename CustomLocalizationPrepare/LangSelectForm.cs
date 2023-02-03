@@ -6,16 +6,25 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace CustomLocalizationPrepare {
   public partial class LangSelectForm : Form {
+    public static string AssemblyDirectory {
+      get {
+        string codeBase = Assembly.GetExecutingAssembly().CodeBase;
+        UriBuilder uri = new UriBuilder(codeBase);
+        string path = Uri.UnescapeDataString(uri.Path);
+        return Path.GetDirectoryName(path);
+      }
+    }
     public LangSelectForm() {
-      string[] arguments = Environment.GetCommandLineArgs();
+      //string[] arguments = Environment.GetCommandLineArgs();
       //MessageBox.Show(arguments[1]);
-      CustomTranslation.Core.InitStandalone(Path.GetDirectoryName(arguments[1]));
+      CustomTranslation.Core.InitStandalone(AssemblyDirectory, Program.ModsFolder, AssemblyDirectory);
       InitializeComponent();
       comboBox.Items.Add(Localize.Strings.Culture.CULTURE_RU_RU);
       comboBox.Items.Add(Localize.Strings.Culture.CULTURE_DE_DE);
@@ -31,7 +40,7 @@ namespace CustomLocalizationPrepare {
     private void button1_Click(object sender, EventArgs e) {
       Core.defaultCulture = (Localize.Strings.Culture)comboBox.SelectedItem;
       this.Hide();
-      new CustormLocalizationPrepare.MainForm().Show();
+      (new CustomLocalizationPrepare.GatherManifestForm()).Show();
     }
 
     private void LangSelectForm_FormClosed(object sender, FormClosedEventArgs e) {

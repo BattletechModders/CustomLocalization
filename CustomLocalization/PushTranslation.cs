@@ -150,6 +150,12 @@ namespace CustomTranslation {
     public string textColor { get; set; }
     public string filename { get; set; }
     public string processor { get; set; }
+    [JsonIgnore]
+    public LocalizationDef parent { get; set; } = null;
+    public string GetShortValue() {
+      if (content.Length < 20) { return this.content; }
+      return this.content.Substring(0, 17) + "...";
+    }
     public LocalizationRecordDef() {
       id = string.Empty;
       original = string.Empty;
@@ -165,32 +171,43 @@ namespace CustomTranslation {
     [JsonIgnore]
     public string filename { get; set; }
     public Strings.Culture culture;
-    public List<string> files { get; set; }
-    public List<TargetDef> directories { get; set; }
+    //public List<string> files { get; set; }
+    //public List<TargetDef> directories { get; set; }
     public List<LocalizationRecordDef> content { get; set; }
+    [JsonIgnore]
+    public Dictionary<string, LocalizationRecordDef> index { get; set; } = new Dictionary<string, LocalizationRecordDef>();
+    [JsonIgnore]
+    public int diffcounter = 0;
     public LocalizationDef(string filename, Strings.Culture culture) {
       this.filename = filename;
       this.culture = culture;
-      this.directories = new List<TargetDef>();
+      //this.directories = new List<TargetDef>();
       this.content = new List<LocalizationRecordDef>();
     }
     public LocalizationDef() {
       this.culture = Core.defaultCulture;
-      this.directories = new List<TargetDef>();
+      //this.directories = new List<TargetDef>();
       this.content = new List<LocalizationRecordDef>();
-      this.files = new List<string>();
+      //this.files = new List<string>();
     }
     public LocalizationDef(string filename) {
       this.filename = filename;
-      this.directories = new List<TargetDef>();
+      //this.directories = new List<TargetDef>();
       this.content = new List<LocalizationRecordDef>();
-      this.files = new List<string>();
+      //this.files = new List<string>();
     }
     public LocalizationDef(Strings.Culture culture) {
       this.culture = culture;
-      this.directories = new List<TargetDef>();
+      //this.directories = new List<TargetDef>();
       this.content = new List<LocalizationRecordDef>();
-      this.files = new List<string>();
+      //this.files = new List<string>();
+    }
+    public void reindex() {
+      index.Clear();
+      foreach (var rec in content) {
+        rec.parent = this;
+        index[rec.id] = rec;
+      }
     }
     public string Merge(LocalizationDef second, bool replaceContent) {
       if (this.culture != second.culture) { return "File cultures not equal"; }
@@ -199,11 +216,6 @@ namespace CustomTranslation {
       foreach (LocalizationRecordDef locRec in this.content) {
         if (dict.ContainsKey(locRec.id)) { continue; }
         dict.Add(locRec.id, locRec);
-      }
-      foreach (TargetDef trgDef in this.directories) {
-        string trgKey = trgDef.getDirectory(Core.ModsRootDirectory);
-        if (dirs.ContainsKey(trgKey)) { continue; }
-        dirs.Add(trgKey, trgDef);
       }
       Log.M?.TWL(0, "merging:" + second.filename);
       foreach (LocalizationRecordDef nlocRec in second.content) {
@@ -222,25 +234,6 @@ namespace CustomTranslation {
           }
         }
       }
-      foreach (TargetDef ntrgDef in second.directories) {
-        string trgKey = ntrgDef.getDirectory(Core.ModsRootDirectory);
-        if (dirs.TryGetValue(trgKey, out TargetDef trgDef)) {
-          foreach (string proc in ntrgDef.processors) {
-            if (trgDef.processors.Contains(proc) == false) { trgDef.processors.Add(proc); }
-          }
-        } else {
-          this.directories.Add(ntrgDef);
-          dirs.Add(trgKey, ntrgDef);
-        }
-      }
-      HashSet<string> affected = new HashSet<string>();
-      foreach (string filename in this.files) {
-        affected.Add(filename);
-      }
-      foreach (string filename in second.files) {
-        affected.Add(filename);
-      }
-      this.files = affected.ToList();
       return string.Empty;
     }
   }
@@ -478,6 +471,7 @@ namespace CustomTranslation {
       if (check_pre(ref inc) == false) { return false; }
       JObject json = inc as JObject;
       string value = (string)json[FieldName()];
+      if (string.IsNullOrEmpty(value)) { return false; }
       MatchCollection matches = CustomTranslation.Core.locRegEx.Matches(value);
       if (matches.Count != 0) { return false; };
       string key = filename + "." + FieldName();
@@ -486,21 +480,21 @@ namespace CustomTranslation {
       return true;
     }
   }
-  public class jtUIname : jtL2K2 {
+  public class jtDescriptionUIname : jtL2K2 {
     protected override bool AbstractActorCheck() { return true; }
     protected override string L1 { get { return "Description"; } }
     protected override string L2 { get { return "UIName"; } }
     protected override string K1 { get { return "Description"; } }
     protected override string K2 { get { return "Id"; } }
   }
-  public class jtName : jtL2K2 {
+  public class jtDescriptionName : jtL2K2 {
     protected override bool AbstractActorCheck() { return true; }
     protected override string L1 { get { return "Description"; } }
     protected override string L2 { get { return "Name"; } }
     protected override string K1 { get { return "Description"; } }
     protected override string K2 { get { return "Id"; } }
   }
-  public class jtDetails : jtL2K2 {
+  public class jtDescriptionDetails : jtL2K2 {
     protected override bool AbstractActorCheck() { return false; }
     protected override string L1 { get { return "Description"; } }
     protected override string L2 { get { return "Details"; } }
@@ -533,6 +527,24 @@ namespace CustomTranslation {
   }
   public class jtYangsThoughts : jtField {
     protected override string FieldName() { return "YangsThoughts"; }
+  }
+  public class jtName : jtField {
+    protected override string FieldName() { return "Name"; }
+  }
+  public class jtShortName : jtField {
+    protected override string FieldName() { return "ShortName"; }
+  }
+  public class jtDescription : jtField {
+    protected override string FieldName() { return "Description"; }
+  }
+  public class jtFlashpointShortDescription : jtField {
+    protected override string FieldName() { return "FlashpointShortDescription"; }
+  }
+  public class jtquirkName : jtField {
+    protected override string FieldName() { return "quirkName"; }
+  }
+  public class jtdescription : jtField {
+    protected override string FieldName() { return "description"; }
   }
   public class jtOptionName : jtField {
     protected override string FieldName() { return "OptionName"; }
@@ -641,11 +653,25 @@ namespace CustomTranslation {
     protected override string I1 { get { return "EffectData"; } }
     protected override string L1 { get { return "Description"; } }
     protected override string L2 { get { return "Details"; } }
+    protected override string K1 { get { return "Id"; } }
+  }
+  public class jteffectDataName : jtI1L2K1 {
+    protected override string I1 { get { return "effectData"; } }
+    protected override string L1 { get { return "Description"; } }
+    protected override string L2 { get { return "Name"; } }
+    protected override string K1 { get { return "Id"; } }
+  }
+  public class jteffectDataDetails : jtI1L2K1 {
+    protected override string I1 { get { return "effectData"; } }
+    protected override string L1 { get { return "Description"; } }
+    protected override string L2 { get { return "Details"; } }
+    protected override string K1 { get { return "Id"; } }
   }
   public class jtStatusEffectsName : jtI1L2K1 {
     protected override string I1 { get { return "statusEffects"; } }
     protected override string L1 { get { return "Description"; } }
     protected override string L2 { get { return "Name"; } }
+    protected override string K1 { get { return "Id"; } }
   }
   public class jtStatusEffectsDetails : jtI1L2K1 {
     protected override string I1 { get { return "statusEffects"; } }

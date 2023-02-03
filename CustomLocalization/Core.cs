@@ -1,5 +1,6 @@
 ﻿using BattleTech;
 using BattleTech.Data;
+using BattleTech.Save.Core;
 using BattleTech.StringInterpolation;
 using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
@@ -237,6 +238,12 @@ namespace CustomTranslation {
     public static bool Prefix(StreamReader __instance,ref string path) {
       try {
         if (Path.GetExtension(path).ToUpper() != ".JSON") { return true; }
+        //if(Core.isFinishedLoading == false) {
+        //  Log.Er?.TWL(0,"reading jsons before localization is fully loaded");
+        //  Log.M?.WL("StreamReader:" + path);
+        //  //Log.Er?.WL(0, Environment.StackTrace);
+        //  return true;
+        //}
         path = Path.GetFullPath(path);
         Log.M?.WL("StreamReader:"+ path);
         HashSet<jtProcGenericEx> procs = path.getLocalizationProcs();
@@ -464,6 +471,7 @@ namespace CustomTranslation {
       if (Core.Settings.fontsReplacementTable.TryGetValue(curCulture, out var replaceFontsTable)) {
         if (replaceFontsTable.TryGetValue(curFont.name, out string replaceFont)) {
           if (Core.fonts.TryGetValue(replaceFont, out TMP_FontAsset font)) {
+            Log.M?.WL(1,"Replaced:"+ replaceFont);
             __result = font;
             return false;
           } else {
@@ -557,6 +565,65 @@ namespace CustomTranslation {
             default: GenericPopupBuilder.Create("PLEASE RESTART", "You should restart for localization to take effect").AddFader(new UIColorRef?(LazySingletonBehavior<UIManager>.Instance.UILookAndColorConstants.PopupBackfill), 0.0f, true).Render(); break;
           }
         }
+      } catch (Exception e) {
+        Log.Er?.TWL(0, e.ToString());
+      }
+    }
+  }
+  [HarmonyPatch(MethodType.Normal)]
+  public static class ModDefsDatabase_FinishedLoadingMods {
+    public static MethodBase TargetMethod() {
+      try {
+        Assembly modTek = null;
+        foreach(var assembly in AppDomain.CurrentDomain.GetAssemblies()) {
+          if (assembly.GetName().Name == "ModTek") { modTek = assembly; break; }
+        }
+        if (modTek == null) {
+          Log.Er?.TWL(0,"can't find ModTek.dll", true);
+          return null;
+        }
+        Type BetterBTRL = modTek.GetType("ModTek.Features.Manifest.BTRL.BetterBTRL");
+        if(BetterBTRL == null) {
+          Log.Er?.TWL(0, "can't find ModTek.Features.Manifest.BTRL.BetterBTRL", true);
+          return null;
+        }
+        return AccessTools.Method(BetterBTRL, "RefreshTypedEntries");
+      } catch(Exception e) {
+        Log.Er?.TWL(0,e.ToString(),true);
+      }
+      return null;
+    }
+    public static void Postfix(object __instance) {
+      try {
+        Log.Er?.TWL(0, $"ModTek.Features.Manifest.BTRL.BetterBTRL.RefreshTypedEntries");
+        object currentManifest = Traverse.Create(__instance).Field<object>("currentManifest").Value;
+        var manifest = Traverse.Create(currentManifest).Field<Dictionary<string, Dictionary<string, BattleTech.VersionManifestEntry>>>("manifest").Value;
+        foreach(var manifestType in manifest) {
+          if (Core.Settings.procSettings.TryGetValue(manifestType.Key, out var procSettings)) {
+            if (procSettings.useName) {
+              foreach(var entry in manifestType.Value) {
+                if(Core.proccessFiles.TryGetValue(entry.Key, out var procs)) {
+                  foreach(var proc in procs.ToList()) {
+                    if (procSettings.jtprocs.Contains(proc) == false) { procs.Remove(proc); }
+                  }
+                }
+              }
+            } else {
+              foreach (var entry in manifestType.Value) {
+                Core.proccessFiles[entry.Key] = procSettings.jtprocs;
+              }
+            }
+          }
+          //Log.Er?.WL(0, $"{manifestType.Key}:{manifestType.Value.Count}");
+        }
+        foreach (var procfile in Core.proccessFiles) {
+          Log.Er?.W(1, $"{procfile.Key} ");
+          foreach (var proc in procfile.Value) {
+            Log.Er?.W(1, $"{proc.Name}");
+          }
+          Log.Er?.WL(0, "");
+        }
+        Core.isFinishedLoading = true;
       } catch (Exception e) {
         Log.Er?.TWL(0, e.ToString());
       }
@@ -718,6 +785,20 @@ namespace CustomTranslation {
   public enum LocalizationProcType {
     Dummy,Key,Content,None
   }
+  public class ProcFuncSettings {
+    public string type { get; set; } = string.Empty;
+    public bool useName { get; set; } = true;
+    [JsonIgnore]
+    public HashSet<jtProcGenericEx> jtprocs = new HashSet<jtProcGenericEx>();
+    public HashSet<string> procs { get; set; } = new HashSet<string>();
+    public void init() {
+      foreach(string proc in procs) {
+        if(Core.localizationMethods.TryGetValue(proc, out var jtproc)) {
+          jtprocs.Add(jtproc);
+        }
+      }
+    }
+  }
   public class CTSettings {
     [JsonIgnore]
     public string cultureSettingsFilePath;
@@ -725,6 +806,7 @@ namespace CustomTranslation {
     public List<MetaEvaluator> metaEvaluators { get; set; }
     public LocalizationProcType localizationProcType { get; set; }
     public Strings.Culture defaultCulture { get; set; }
+    public Dictionary<string, ProcFuncSettings> procSettings { get; set; } = new Dictionary<string, ProcFuncSettings>();
     public Dictionary<Strings.Culture, Dictionary<string, string>> fontsReplacementTable { get; set; }
     public CTSettings() {
       debugLog = false;
@@ -758,10 +840,11 @@ namespace CustomTranslation {
     public static readonly string LocalizationDefSuffix = "Def";
     public static readonly string LocalizationRefPrefix = "__/";
     public static readonly string LocalizationRefSufix = "/__";
-    public static Dictionary<string, Dictionary<Localize.Strings.Culture, string>> stringsTable = new Dictionary<string, Dictionary<Localize.Strings.Culture, string>>();
+    public static bool isFinishedLoading { get; set; } = false;
+    public static Dictionary<string, Dictionary<Localize.Strings.Culture, string>> stringsTable { get; set; } = new Dictionary<string, Dictionary<Localize.Strings.Culture, string>>();
     public static Dictionary<string, string> localizationCache = new Dictionary<string, string>();
     public static Dictionary<string, jtProcGenericEx> localizationMethods = new Dictionary<string, jtProcGenericEx>();
-    public static Dictionary<string, HashSet<jtProcGenericEx>> proccessDirectories = new Dictionary<string, HashSet<jtProcGenericEx>>();
+    //public static Dictionary<string, HashSet<jtProcGenericEx>> proccessDirectories = new Dictionary<string, HashSet<jtProcGenericEx>>();
     public static Dictionary<string, HashSet<jtProcGenericEx>> proccessFiles = new Dictionary<string, HashSet<jtProcGenericEx>>();
     public static Dictionary<string, LocalizationDef> loadedDefinitions = new Dictionary<string, LocalizationDef>();
     public static HashSet<string> affectedFiles = new HashSet<string>();
@@ -782,11 +865,6 @@ namespace CustomTranslation {
       string filename = Path.GetFileNameWithoutExtension(path);
       if (Core.proccessFiles.TryGetValue(filename, out HashSet<jtProcGenericEx> procs)) {
         Log.M?.WL(1, "found filename:" + filename);
-        return procs;
-      }
-      string dir = Path.GetDirectoryName(Path.GetFullPath(path));
-      if (Core.proccessDirectories.TryGetValue(dir, out procs)) {
-        Log.M?.WL(1, "found directory:" + dir);
         return procs;
       }
       return null;
@@ -825,9 +903,13 @@ namespace CustomTranslation {
               Log.M?.TWL(0, locMethod.ToString() +" have same name "+ localizationMethods[lMethod.Name].GetType().ToString(), true);
             } else {
               localizationMethods.Add(lMethod.Name, lMethod);
+              Log.Er?.WL($"{lMethod.Name}");
             }
           };
         }
+      }
+      foreach(var locproc in Core.Settings.procSettings) {
+        locproc.Value.init();
       }
       skipLocalizationProc.Add("MOD");
       skipLocalizationProc.Add("LOCALIZATION");
@@ -908,21 +990,6 @@ namespace CustomTranslation {
         }
         AddTranslationRecord(trRec);
       }
-      foreach (var trgRec in def.directories) {
-        string dir = trgRec.getDirectory(Core.ModsRootDirectory);
-        if (Core.proccessDirectories.TryGetValue(dir, out HashSet<jtProcGenericEx> procs) == false) {
-          procs = new HashSet<jtProcGenericEx>();
-          proccessDirectories.Add(dir, procs);
-        }
-        foreach (string procName in trgRec.processors) {
-          if (Core.localizationMethods.TryGetValue(procName, out jtProcGenericEx proc)) {
-            procs.Add(proc);
-          }
-        }
-      }
-      foreach (string afile in def.files) {
-        Core.affectedFiles.Add(afile);
-      }
       if (loadedDefinitions.ContainsKey(def.filename)) {
         loadedDefinitions[def.filename] = def;
       } else {
@@ -944,22 +1011,16 @@ namespace CustomTranslation {
           Log.Er?.TWL(0, e.ToString(),true);
         }
       }
-      foreach(var procFile in Core.proccessFiles) {
-        Log.M?.TWL(0, "'"+procFile.Key+"'");
-        foreach(var proc in procFile.Value) {
-          Log.M?.WL(1,proc.Name);
-        }
-      }
-      foreach (var procDir in Core.proccessDirectories) {
-        Log.M?.TWL(0, procDir.Key);
-        foreach (var proc in procDir.Value) {
-          Log.M?.WL(1, proc.Name);
-        }
-      }
-      Log.M?.TWL(0, "affectedFiles:"+ Core.affectedFiles.Count);
-      foreach (string afile in Core.affectedFiles) {
-        Log.M?.WL(1, afile);
-      }
+      //foreach(var procFile in Core.proccessFiles) {
+      //  Log.M?.TWL(0, "'"+procFile.Key+"'");
+      //  foreach(var proc in procFile.Value) {
+      //    Log.M?.WL(1,proc.Name);
+      //  }
+      //}
+      //Log.M?.TWL(0, "affectedFiles:"+ Core.affectedFiles.Count);
+      //foreach (string afile in Core.affectedFiles) {
+      //  Log.M?.WL(1, afile);
+      //}
     }
     public static string getLocalizationString(string key) {
       if (Core.stringsTable.TryGetValue(key, out var cDict)) {
@@ -991,39 +1052,102 @@ namespace CustomTranslation {
       //File.WriteAllText(path, JsonConvert.SerializeObject(flushableTranslation,Formatting.Indented));
       //Log.M?.LogWrite("saved translation to "+path+"\n", true);
     }
-    public static string ModsRootDirectory = string.Empty;
-    public static string CurRootDirectory = string.Empty;
+    public static string ModsRootDirectory { get; set; } = string.Empty;
+    public static string CurRootDirectory { get; set; } = string.Empty;
     public static Strings.Culture defaultCulture = Strings.Culture.CULTURE_EN_US;
-    public static void InitStandalone(string directory) {
-      CurRootDirectory = directory;
-      ModsRootDirectory = Path.GetDirectoryName(directory);
-      Log.BaseDirectory = directory;
+    public static void InitStandalone(string cl_root_directory, string mods_root_directory, string logs_directory) {
+      CurRootDirectory = cl_root_directory;
+      ModsRootDirectory = mods_root_directory;
+      Log.BaseDirectory = logs_directory;
       //settingsJson.get
       Core.Settings = new CTSettings();
+      JObject mod = JObject.Parse(File.ReadAllText( Path.Combine(cl_root_directory, "mod.json")));
+      Core.Settings = JsonConvert.DeserializeObject<CTSettings>(mod["Settings"].ToString());
       Core.Settings.debugLog = true;
       Log.InitLog();
-      Log.M?.LogWrite("Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version + "\n", true);
+      Log.M?.TWL(0,$"Initing... {mods_root_directory} version: {Assembly.GetExecutingAssembly().GetName().Version}", true);
+      Log.M?.WL(1, $"Settings:{JsonConvert.SerializeObject(Core.Settings, Formatting.Indented)}");
       InitStructure();
-      Core.GatherLocalizations(ModsRootDirectory);
-      Core.GatherLocalizationDefs(Path.GetDirectoryName(directory));
+      //Core.GatherLocalizations(ModsRootDirectory);
+      //Core.GatherLocalizationDefs(ModsRootDirectory);
+    }
+    public static string SearchCultureSettings(string directory) {
+      string cur_dir = directory;
+      while (string.IsNullOrEmpty(cur_dir) == false) {
+        string cache_dir = Path.Combine(cur_dir, "Mods");
+        if (Directory.Exists(cache_dir)) { return Path.Combine(cache_dir, "cultureSettings.json"); }
+        cur_dir = Path.GetDirectoryName(cur_dir);
+      }
+      return string.Empty;
+    }
+    public static string SearchForModTekTempFolder(string directory) {
+      string temp = directory;
+      while(string.IsNullOrEmpty(temp) == false) {
+        if (Directory.Exists(Path.Combine(temp, ".modtek"))) { return Path.Combine(temp, ".modtek"); }
+        temp = Path.GetDirectoryName(temp);
+      }
+      return string.Empty;
+    }
+    public static void FinishedLoading(List<string> loadOrder) {
+      Log.Er?.TWL(0, "FinishedLoading", true);
+      try {
+        string manifest = SearchForModTekTempFolder(Log.BaseDirectory);
+        if (string.IsNullOrEmpty(manifest)) {
+          Log.Er?.TWL(0, "can't find .modtek folder");
+          return;
+        }
+        manifest = Path.Combine(manifest, "Manifest.csv");
+        if(File.Exists(manifest) == false) {
+          Log.Er?.TWL(0, $"{manifest} does not exists");
+        }
+        HashSet<string> types = new HashSet<string>();
+        using (var manifestfile = new StreamReader(manifest)) {
+          var settings = new CSVFile.CSVSettings();
+          settings.FieldDelimiter = ',';
+          using (var csv = new CSVFile.CSVReader(manifestfile, settings)) {
+            foreach(var line in csv) {
+              types.Add(line[1]);
+            }
+          }
+        }
+        Dictionary<string, ProcFuncSettings> procs = new Dictionary<string, ProcFuncSettings>();
+        foreach(var type in types) {
+          var procSet = new ProcFuncSettings();
+          procSet.type = type;
+          procs.Add(type, procSet);
+        }
+        Log.Er?.WL(0,JsonConvert.SerializeObject(procs, Formatting.Indented));
+      } catch (Exception e) {
+        Log.M.TWL(0, e.ToString(), true);
+      }
     }
 
     public static void Init(string directory, string settingsJson) {
       Log.BaseDirectory = directory;
-      
-      //settingsJson.get
       Core.Settings = JsonConvert.DeserializeObject<CustomTranslation.CTSettings>(settingsJson);
-      Core.Settings.cultureSettingsFilePath = Path.Combine(directory, "..", "..", "cultureSettings.json");
+      Log.InitLog();
+      string standaloneDirectory = Path.Combine(Application.persistentDataPath, SaveSystem.StandaloneFolder);
+      var localWriteLocation = new WriteLocation(standaloneDirectory, false);
+      Log.Er?.WL(1, $"{localWriteLocation.rootPath}");
+      Core.Settings.cultureSettingsFilePath = Path.Combine(Path.GetDirectoryName(localWriteLocation.rootPath), "cultureSettings.json");//SearchCultureSettings(directory);//Path.Combine(directory, "..", "..", "cultureSettings.json");
+      Log.Er?.TWL(0, "Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version, true);
+      Log.Er?.WL(1, "localizationProcType:" + Core.Settings.localizationProcType);
+      Log.Er?.W(1, "cultureSettingsFilePath:" + Core.Settings.cultureSettingsFilePath);
       if (File.Exists(Core.Settings.cultureSettingsFilePath)) {
-        Core.currentCulture = JsonConvert.DeserializeObject<CLCultureSettings>(File.ReadAllText(Core.Settings.cultureSettingsFilePath));
+        Log.Er?.WL(1, " exists");
+        string content = File.ReadAllText(Core.Settings.cultureSettingsFilePath);
+        Log.Er?.WL(0, content);
+        Core.currentCulture = JsonConvert.DeserializeObject<CLCultureSettings>(content);
+        Log.Er?.WL(1, "CurrentCulture:" + Core.currentCulture.currentCulture + "/" + Strings.CurrentCulture);
       } else {
         Core.currentCulture = new CLCultureSettings();
         File.WriteAllText(Core.Settings.cultureSettingsFilePath, JsonConvert.SerializeObject(Core.currentCulture,Formatting.Indented));
+        Log.Er?.WL(1, " not exists");
       }
-      Log.InitLog();
-      Log.Er?.TWL(0,"Initing... " + directory + " version: " + Assembly.GetExecutingAssembly().GetName().Version, true);
-      Log.Er?.WL(1, "localizationProcType:" + Core.Settings.localizationProcType);
-      Log.Er?.WL(1, "CurrentCulture:" + Core.currentCulture.currentCulture+"/"+Strings.CurrentCulture);
+      try {
+      } catch(Exception e) {
+        Log.Er?.TWL(0,e.ToString(),true);
+      }
       InitStructure();
       try {
         Log.Er?.TWL(0, "loading assets:" + Path.Combine(directory, "assets"));

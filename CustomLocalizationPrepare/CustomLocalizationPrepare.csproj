@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{3CD560F2-3272-4AB4-B540-7FF4FC1E097D}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <RootNamespace>CustomLocalizationPrepare</RootNamespace>
     <AssemblyName>CustomLocalizationPrepare</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
@@ -38,7 +38,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="EPPlus, Version=4.5.3.2, Culture=neutral, PublicKeyToken=ea159fdaa78159a1, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -46,14 +46,14 @@
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BattleTech_Data\Managed\Newtonsoft.Json.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="protobuf-net">
-      <HintPath>..\..\BattleTech_Data\Managed\protobuf-net.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\protobuf-net.dll</HintPath>
     </Reference>
     <Reference Include="ShadowrunDTO">
-      <HintPath>..\..\BattleTech_Data\Managed\ShadowrunDTO.dll</HintPath>
+      <HintPath>$(BattleTechGameDir)\BattleTech_Data\Managed\ShadowrunDTO.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
@@ -75,6 +75,12 @@
     <Compile Include="CSVSettings.cs" />
     <Compile Include="CSVStream.cs" />
     <Compile Include="CSVWriter.cs" />
+    <Compile Include="GatherManifestForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="GatherManifestForm.Designer.cs">
+      <DependentUpon>GatherManifestForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="GoogleTranslate.cs" />
     <Compile Include="LangSelectForm.cs">
       <SubType>Form</SubType>
@@ -82,11 +88,17 @@
     <Compile Include="LangSelectForm.Designer.cs">
       <DependentUpon>LangSelectForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="MainForm.cs">
+    <Compile Include="ManifestForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="MainForm.Designer.cs">
-      <DependentUpon>MainForm.cs</DependentUpon>
+    <Compile Include="ManifestForm.Designer.cs">
+      <DependentUpon>ManifestForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="MainFormOld.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MainFormOld.Designer.cs">
+      <DependentUpon>MainFormOld.cs</DependentUpon>
     </Compile>
     <Compile Include="ProcessForm.cs">
       <SubType>Form</SubType>
@@ -97,11 +109,17 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VanillaLocalization.cs" />
+    <EmbeddedResource Include="GatherManifestForm.resx">
+      <DependentUpon>GatherManifestForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="LangSelectForm.resx">
       <DependentUpon>LangSelectForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="MainForm.resx">
-      <DependentUpon>MainForm.cs</DependentUpon>
+    <EmbeddedResource Include="ManifestForm.resx">
+      <DependentUpon>ManifestForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MainFormOld.resx">
+      <DependentUpon>MainFormOld.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="ProcessForm.resx">
       <DependentUpon>ProcessForm.cs</DependentUpon>
@@ -137,12 +155,18 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\Mods\CustomLocalization"
-copy /Y "$(ProjectDir)\bin\Debug\EPPlus.dll" "$(ProjectDir)\..\..\Mods\CustomLocalization"
-copy /Y "$(TargetPath)" "$(ProjectDir)\..\..\RogueTechWorking\CustomLocalization"
-copy /Y "$(ProjectDir)\bin\Debug\EPPlus.dll" "$(ProjectDir)\..\..\RogueTechWorking\CustomLocalization"
-copy /Y "$(TargetPath)" "$(ProjectDir)..\..\Release_CAC\Release\CustomBundle\CustomLocalization"
-copy /Y "$(ProjectDir)\bin\Debug\EPPlus.dll" "$(ProjectDir)\..\..\Release_CAC\Release\CustomBundle\CustomLocalization"
+    <PostBuildEvent>
+if exist "$(BattleTechGameDir)\Mods_CBDE\Core\CustomLocalization" (
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods_CBDE\Core\CustomLocalization"
+  copy /Y "$(ProjectDir)\bin\Debug\EPPlus.dl" "$(BattleTechGameDir)\Mods_CBDE\Core\CustomLocalization"
+)
+if exist "$(BattleTechGameDir)\Mods\Core\CustomLocalization" (
+  copy /Y "$(TargetPath)" "$(BattleTechGameDir)\Mods\Core\CustomLocalization"
+  copy /Y "$(ProjectDir)\bin\Debug\EPPlus.dl" "$(BattleTechGameDir)\Mods\Core\CustomLocalization"
+)
+if exist "$(RogueTechRepo)\Core\CustomLocalization" (
+  copy /Y "$(TargetPath)" "$(RogueTechRepo)\Core\CustomLocalization"
+)
 </PostBuildEvent>
   </PropertyGroup>
 </Project>
