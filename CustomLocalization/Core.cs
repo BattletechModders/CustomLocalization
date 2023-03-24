@@ -4,7 +4,7 @@ using BattleTech.Save.Core;
 using BattleTech.StringInterpolation;
 using BattleTech.UI;
 using BattleTech.UI.TMProWrapper;
-using Harmony;
+using HarmonyLib;
 using HBS;
 using HBS.Util;
 using Localize;
@@ -1091,25 +1091,32 @@ namespace CustomTranslation {
     public static void FinishedLoading(List<string> loadOrder) {
       Log.Er?.TWL(0, "FinishedLoading", true);
       try {
-        string manifest = SearchForModTekTempFolder(Log.BaseDirectory);
-        if (string.IsNullOrEmpty(manifest)) {
-          Log.Er?.TWL(0, "can't find .modtek folder");
+        var BetterBTRL = typeof(ModTek.ModTek).Assembly.GetType("ModTek.Features.Manifest.BTRL.BetterBTRL");
+        if (BetterBTRL == null) { 
+          Log.Er?.TWL(0, "can't find ModTek.Features.Manifest.BTRL.BetterBTRL");
           return;
         }
-        manifest = Path.Combine(manifest, "Manifest.csv");
-        if(File.Exists(manifest) == false) {
-          Log.Er?.TWL(0, $"{manifest} does not exists");
-        }
+        var BetterBTRL_Instance = AccessTools.Field(BetterBTRL, "Instance").GetValue(null);
+        object currentManifest = Traverse.Create(BetterBTRL_Instance).Field("currentManifest").GetValue();
+        var manifest = Traverse.Create(currentManifest).Field<Dictionary<string, Dictionary<string, BattleTech.VersionManifestEntry>>>("manifest").Value;
+
         HashSet<string> types = new HashSet<string>();
-        using (var manifestfile = new StreamReader(manifest)) {
-          var settings = new CSVFile.CSVSettings();
-          settings.FieldDelimiter = ',';
-          using (var csv = new CSVFile.CSVReader(manifestfile, settings)) {
-            foreach(var line in csv) {
-              types.Add(line[1]);
-            }
-          }
+        foreach(var typed_manifest in manifest) {
+          types.Add(typed_manifest.Key);
         }
+        Log.Er?.WL(1,$"types:{types.Count}");
+        foreach (string type in types) {
+          Log.Er?.WL(2, $"{type}");
+        }
+        //using (var manifestfile = new StreamReader(manifest)) {
+        //  var settings = new CSVFile.CSVSettings();
+        //  settings.FieldDelimiter = ',';
+        //  using (var csv = new CSVFile.CSVReader(manifestfile, settings)) {
+        //    foreach(var line in csv) {
+        //      types.Add(line[1]);
+        //    }
+        //  }
+        //}
         Dictionary<string, ProcFuncSettings> procs = new Dictionary<string, ProcFuncSettings>();
         foreach(var type in types) {
           var procSet = new ProcFuncSettings();
@@ -1134,15 +1141,20 @@ namespace CustomTranslation {
       Log.Er?.WL(1, "localizationProcType:" + Core.Settings.localizationProcType);
       Log.Er?.W(1, "cultureSettingsFilePath:" + Core.Settings.cultureSettingsFilePath);
       if (File.Exists(Core.Settings.cultureSettingsFilePath)) {
-        Log.Er?.WL(1, " exists");
+        Log.Er?.WL(1, " exists",true);
         string content = File.ReadAllText(Core.Settings.cultureSettingsFilePath);
         Log.Er?.WL(0, content);
         Core.currentCulture = JsonConvert.DeserializeObject<CLCultureSettings>(content);
         Log.Er?.WL(1, "CurrentCulture:" + Core.currentCulture.currentCulture + "/" + Strings.CurrentCulture);
       } else {
+        Log.Er?.WL(1, " not exists",true);
         Core.currentCulture = new CLCultureSettings();
+        string cultureSettingsDir = Path.GetDirectoryName(Core.Settings.cultureSettingsFilePath);
+        if (Directory.Exists(cultureSettingsDir) == false) {
+          Log.Er?.WL(1,$"directory:{cultureSettingsDir} not exists. creating",true);
+          Directory.CreateDirectory(cultureSettingsDir);
+        }
         File.WriteAllText(Core.Settings.cultureSettingsFilePath, JsonConvert.SerializeObject(Core.currentCulture,Formatting.Indented));
-        Log.Er?.WL(1, " not exists");
       }
       try {
       } catch(Exception e) {
@@ -1173,7 +1185,7 @@ namespace CustomTranslation {
         if (Core.Settings.localizationProcType != LocalizationProcType.None) {
           Core.GatherLocalizations(Path.GetDirectoryName(directory));
           Core.GatherLocalizationDefs(Path.GetDirectoryName(directory));
-          var harmony = HarmonyInstance.Create("io.mission.customlocalization");
+          var harmony = new Harmony("io.mission.customlocalization");
           harmony.PatchAll(Assembly.GetExecutingAssembly());
         }
         //LazySingletonBehavior<UnityGameInstance>.Instance.Game.MessageCenter.AddSubscriber(MessageCenterMessageType.OnLanguageChanged, new ReceiveMessageCenterMessage(Core.OnLanguageChanged));
