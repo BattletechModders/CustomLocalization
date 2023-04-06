@@ -1505,6 +1505,14 @@ namespace CustomTranslation {
     protected override string I1 { get { return "objectiveList"; } }
     protected override string L1 { get { return "description"; } }
   }
+  public class jtaffinityLevels_description : jtI1L1 {
+    protected override string I1 { get { return "affinityLevels"; } }
+    protected override string L1 { get { return "description"; } }
+  }
+  public class jtaffinityLevels_levelName : jtI1L1 {
+    protected override string I1 { get { return "affinityLevels"; } }
+    protected override string L1 { get { return "levelName"; } }
+  }
   public class jtcontents_words : jtI1L1 {
     protected override string I1 { get { return "contents"; } }
     protected override string L1 { get { return "words"; } }
