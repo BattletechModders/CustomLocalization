@@ -1,5 +1,5 @@
 ﻿namespace CustormLocalizationPrepare {
-  partial class MainForm {
+  partial class MainFormOld {
     /// <summary>
     /// Required designer variable.
     /// </summary>
@@ -50,7 +50,7 @@
       // 
       // tbGamePath
       // 
-      this.tbGamePath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+      this.tbGamePath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
       this.tbGamePath.Location = new System.Drawing.Point(2, 19);
       this.tbGamePath.Name = "tbGamePath";
@@ -69,8 +69,8 @@
       // 
       // splitContainer1
       // 
-      this.splitContainer1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
+      this.splitContainer1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
       this.splitContainer1.Location = new System.Drawing.Point(2, 45);
       this.splitContainer1.Name = "splitContainer1";
@@ -90,8 +90,8 @@
       // 
       // modsList
       // 
-      this.modsList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
+      this.modsList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
       this.modsList.CheckBoxes = true;
       this.modsList.Location = new System.Drawing.Point(3, 3);
@@ -102,7 +102,7 @@
       // 
       // chAllMods
       // 
-      this.chAllMods.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+      this.chAllMods.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
       this.chAllMods.Location = new System.Drawing.Point(3, 512);
       this.chAllMods.Name = "chAllMods";
@@ -114,7 +114,7 @@
       // 
       // chAllParts
       // 
-      this.chAllParts.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+      this.chAllParts.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
       this.chAllParts.Location = new System.Drawing.Point(3, 512);
       this.chAllParts.Name = "chAllParts";
