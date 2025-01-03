@@ -660,6 +660,14 @@ namespace CustomTranslation {
         text = Core.localizationCache[text];
         return;
       }
+      // Straight vanilla string replacement: "BULWARK" -> "Foobar"
+      string upperText = text.ToUpper(CultureInfo.InvariantCulture);
+      if (Core.stringsTable.ContainsKey(upperText)) {
+        Log.M?.LogWrite("Plain replacement: " + text + "\n");
+        text = Core.getLocalizationString(upperText);
+        Log.M?.LogWrite("-> " + text + "\n");
+      }
+      // Mod string replacement: "__BULWARK__: __BULWARKBONUS__" -> "Foobar: Baz"
       MatchCollection matches = Core.locRegEx.Matches(text);
       //Log.M?.LogWrite(text + "\n");
       string original = text;
@@ -685,6 +693,14 @@ namespace CustomTranslation {
         text = Core.localizationCache[text];
         return;
       }
+      // Straight vanilla string replacement: "BULWARK" -> "Foobar"
+      string upperText = text.ToUpper(CultureInfo.InvariantCulture);
+      if (Core.stringsTable.ContainsKey(upperText)) {
+        Log.M?.LogWrite("Plain replacement: " + text + "\n");
+        text = Core.getLocalizationString(upperText,culture);
+        Log.M?.LogWrite("-> " + text + "\n");
+      }
+      // Mod string replacement: "__BULWARK__: __BULWARKBONUS__" -> "Foobar: Baz"
       MatchCollection matches = Core.locRegEx.Matches(text);
       //Log.M?.LogWrite(text + "\n");
       string original = text;
