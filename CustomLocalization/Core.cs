@@ -102,7 +102,7 @@ namespace CustomTranslation {
     private static DebugLogFile InterpolationReport = null;
     public static DebugLogFile M { get { return Core.Settings.debugLog ? LogFile : null; } }
     public static DebugLogFile Er { get { return LogFile; } }
-    public static DebugLogFile I { get { return InterpolationReport; } }
+    public static DebugLogFile I { get { return Core.Settings.interoplateLog ? InterpolationReport: null; } }
     public static string BaseDirectory;
     public static readonly int flushBufferLength = 16 * 1024;
     public static bool flushThreadActive = true;
@@ -146,24 +146,24 @@ namespace CustomTranslation {
         Log.M?.LogWrite("Interpolator.Interpolate " + template + "->");
         Text_Append.Localize(ref template);
         Log.M?.LogWrite(template+"\n");
-        Log.I.TWL(0,"Шаблон:"+template,true);
-        Log.I.WL(1, "Контекст:");
+        Log.I?.TWL(0,"Шаблон:"+template,true);
+        Log.I?.WL(1, "Контекст:");
         if(enumToDesignerMap == null) {
           Type GameContextEnumTagToDesignerTag = typeof(GameContext).Assembly.GetType("GameContextEnumTagToDesignerTag");
           enumToDesignerMap = (Dictionary<GameContextObjectTagEnum, string>)GameContextEnumTagToDesignerTag.GetField("enumToDesignerMap", BindingFlags.Static | BindingFlags.Public).GetValue(null);
         }
         foreach (var citem in Traverse.Create(context).Field<Dictionary<GameContextObjectTagEnum, object>>("context").Value) {
-          Log.I.WL(2, enumToDesignerMap[citem.Key]+":"+ citem.Value.GetType().ToString());
+          Log.I?.WL(2, enumToDesignerMap[citem.Key]+":"+ citem.Value.GetType().ToString());
           PropertyInfo[] properties = citem.Value.GetType().GetProperties(BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic);
           foreach(PropertyInfo prop in properties) {
             if (prop.CanRead == false) { continue; }
             if (returnTypes.Contains(prop.PropertyType) == false) { continue; }
-            Log.I.WL(3, prop.Name+":"+prop.PropertyType.Name);
+            Log.I?.WL(3, prop.Name+":"+prop.PropertyType.Name);
           }
           FieldInfo[] fields = citem.Value.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
           foreach (FieldInfo field in fields) {
             if (returnTypes.Contains(field.FieldType) == false) { continue; }
-            Log.I.WL(3, field.Name+":"+field.FieldType.Name);
+            Log.I?.WL(3, field.Name+":"+field.FieldType.Name);
           }
           MethodInfo[] methods = citem.Value.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
           foreach(MethodInfo method in methods) {
@@ -172,7 +172,7 @@ namespace CustomTranslation {
             if (method.IsAbstract) { continue; }
             if (method.IsGenericMethod) { continue; }
             if (returnTypes.Contains(method.ReturnParameter.ParameterType) == false) { continue; }
-            Log.I.WL(3, method.Name+":"+method.ReturnParameter.ParameterType.Name);
+            Log.I?.WL(3, method.Name+":"+method.ReturnParameter.ParameterType.Name);
           }
         }
       } catch(Exception e) {
@@ -617,11 +617,11 @@ namespace CustomTranslation {
           //Log.Er?.WL(0, $"{manifestType.Key}:{manifestType.Value.Count}");
         }
         foreach (var procfile in Core.proccessFiles) {
-          Log.Er?.W(1, $"{procfile.Key} ");
+          Log.M?.W(1, $"{procfile.Key} ");
           foreach (var proc in procfile.Value) {
-            Log.Er?.W(1, $"{proc.Name}");
+            Log.M?.W(1, $"{proc.Name}");
           }
-          Log.Er?.WL(0, "");
+          Log.M?.WL(0, "");
         }
         Core.isFinishedLoading = true;
       } catch (Exception e) {
@@ -819,6 +819,8 @@ namespace CustomTranslation {
     [JsonIgnore]
     public string cultureSettingsFilePath;
     public bool debugLog { get; set; }
+    
+    public bool interoplateLog { get; set; }
     public List<MetaEvaluator> metaEvaluators { get; set; }
     public LocalizationProcType localizationProcType { get; set; }
     public Strings.Culture defaultCulture { get; set; }
@@ -826,6 +828,7 @@ namespace CustomTranslation {
     public Dictionary<Strings.Culture, Dictionary<string, string>> fontsReplacementTable { get; set; }
     public CTSettings() {
       debugLog = false;
+      interoplateLog = false;
       metaEvaluators = new List<MetaEvaluator>();
       localizationProcType = LocalizationProcType.Dummy;
       fontsReplacementTable = new Dictionary<Strings.Culture, Dictionary<string, string>>();
